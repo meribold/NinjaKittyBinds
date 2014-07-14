@@ -1,6 +1,4 @@
-NinjaKittyKeyBinds = LibStub("AceAddon-3.0"):NewAddon("NinjaKittyKeyBinds", "AceConsole-3.0")
-NinjaKittyKeyBinds._G = _G
-
+NinjaKittyKeyBinds = { _G = _G }
 setfenv(1, NinjaKittyKeyBinds)
 
 local string, math, pairs, ipairs = _G.string, _G.math, _G.pairs, _G.ipairs
@@ -51,13 +49,6 @@ local macros = {
     key = "3", text =
       "/use Cyclone",
   },
-  --[[
-  {
-    key = "SHIFT-3", text =
-      "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [noform:1]Bear Form",
-  },
-  ]]
   {
     key = "SHIFT-3", text =
       "/use [@focus]Cyclone",
@@ -552,8 +543,8 @@ local function bind()
   --_G.SetBinding("F", "INTERACTMOUSEOVER")
 
   _G.SaveBindings(_G.GetCurrentBindingSet())
-  NinjaKittyKeyBinds:Print("Commands bound and saved as " .. (_G.GetCurrentBindingSet() == 1 and
-    "account" or "character specific") .. " binding set.")
+  _G.print("Commands bound and saved as " .. (_G.GetCurrentBindingSet() == 1 and "account" or "character specific") ..
+    " binding set.")
 end
 
 function handlerFrame:ADDON_LOADED()
@@ -603,11 +594,13 @@ function handlerFrame:ADDON_LOADED()
     ]=]
   end
 
-  NinjaKittyKeyBinds:RegisterChatCommand("nkkb", function(args, ...)
-    if not _G.InCombatLockdown() and args == "bind" then
+  -- http://wowpedia.org/Creating_a_slash_command
+  _G.SLASH_NINJAKITTYKEYBINDS1, SLASH_NINJAKITTYKEYBINDS2 = "/nkkb"
+  _G.SlashCmdList.NINJAKITTYKEYBINDS = function(message, editBox)
+    if not _G.InCombatLockdown() and message == "bind" then
       bind()
     end
-  end)
+  end
 
   self.ADDON_LOADED = nil
 end
@@ -1262,11 +1255,11 @@ function handlerFrame:PLAYER_ENTERING_WORLD()
 end
 
 function handlerFrame:SPELLS_CHANGED(...)
-  NinjaKittyKeyBinds:Print("SPELLS_CHANGED", ...)
+  _G.print("SPELLS_CHANGED", ...)
 end
 
 function handlerFrame:PLAYER_SPECIALIZATION_CHANGED(...)
-  NinjaKittyKeyBinds:Print("PLAYER_SPECIALIZATION_CHANGED", ...)
+  _G.print("PLAYER_SPECIALIZATION_CHANGED", ...)
 end
 
 handlerFrame:RegisterEvent("ADDON_LOADED")
