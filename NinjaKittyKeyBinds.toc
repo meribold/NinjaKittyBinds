@@ -5,7 +5,4 @@
 ## Author: meribold (Lukas Waymann)
 ## Version: 0.1
 
-embeds.xml
-
 NinjaKittyKeyBinds.lua
-
