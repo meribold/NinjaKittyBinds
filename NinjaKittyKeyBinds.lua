@@ -636,32 +636,6 @@ function handlerFrame:ADDON_LOADED()
     }
   end
 
-  local db = _G.NinjaKittyKeyBindsDB
-
-  do
-    -- Find the first action slot that Prowl (could be 5215 or 102547) is placed in. We can use it to find if
-    -- Incarnation is active or not. If we move Prowl we have to /reload; TODO: can we find the new action slot directly
-    -- even if in combat?
-    -- http://wowpedia.org/API_GetActionInfo
-    -- http://wowprogramming.com/docs/api/GetActionInfo
-    local actionType, id, subType
-    if db.prowlActionSlot then
-      actionType, id, subType = _G.GetActionInfo(db.prowlActionSlot)
-    end
-    if not actionType or actionType ~= "spell" or not id or (id ~= 5215 and id ~= 102547) then
-      db.prowlActionSlot = nil
-      for i = 1, 120 do
-        local actionType, id, subType = _G.GetActionInfo(i)
-        if actionType and actionType == "spell" and (id == 5215 or id == 102547) then
-          db.prowlActionSlot = i
-          break
-        end
-      end
-    end
-  end
-
-  secureHeader:SetAttribute("prowlActionSlot", db.prowlActionSlot)
-
   do
     -- TODO: make it work for pet battles?
     local overrideBarStateHandler = CreateFrame("Frame", nil, nil, "SecureHandlerStateTemplate")
@@ -711,7 +685,34 @@ function handlerFrame:ADDON_LOADED()
   self.ADDON_LOADED = nil
 end
 
+-- http://wowpedia.org/AddOn_loading_process#Order_of_events_fired_during_loading
 function handlerFrame:PLAYER_LOGIN()
+  _G.assert(not _G.InCombatLockdown())
+
+  do
+    -- Find the first action slot that Prowl (could be 5215 or 102547) is placed in. We can use it to find if
+    -- Incarnation is active or not. If we move Prowl we have to /reload; TODO: can we find the new action slot directly
+    -- even if in combat?
+    -- http://wowpedia.org/API_GetActionInfo
+    -- http://wowprogramming.com/docs/api/GetActionInfo
+    local db = _G.NinjaKittyKeyBindsDB
+    local actionType, id, subType
+    if db.prowlActionSlot then
+      actionType, id, subType = _G.GetActionInfo(db.prowlActionSlot)
+    end
+    if not actionType or actionType ~= "spell" or not id or (id ~= 5215 and id ~= 102547) then
+      db.prowlActionSlot = nil
+      for i = 1, 120 do
+        local actionType, id, subType = _G.GetActionInfo(i)
+        if actionType and actionType == "spell" and (id == 5215 or id == 102547) then
+          db.prowlActionSlot = i
+          break
+        end
+      end
+    end
+    secureHeader:SetAttribute("prowlActionSlot", db.prowlActionSlot)
+  end
+
   local specID, specName = _G.GetSpecializationInfo(_G.GetSpecialization() or 2)
 
   for _, macro in _G.ipairs(macros) do
@@ -728,19 +729,15 @@ function handlerFrame:PLAYER_LOGIN()
         macro:init()
       end
     end
-  end
-
-  for _, macros in _G.ipairs({ macros }) do
-    for _, macro in _G.ipairs(macros) do
-      if _G.type(macro.text)  == "string" and macro.button then
-        -- By default, a button only receives the left mouse button's "up" action.
-        macro.button:RegisterForClicks("AnyDown")
-      end
+    if _G.type(macro.text) == "string" and macro.button then
+      -- By default, a button only receives the left mouse button's "up" action.
+      macro.button:RegisterForClicks("AnyDown")
     end
   end
 end
 
 function handlerFrame:PLAYER_ENTERING_WORLD()
+  -- ...
 end
 
 function handlerFrame:SPELLS_CHANGED(...)
@@ -753,7 +750,7 @@ end
 
 handlerFrame:RegisterEvent("ADDON_LOADED")
 handlerFrame:RegisterEvent("PLAYER_LOGIN")
-handlerFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+--handlerFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 --handlerFrame:RegisterEvent("SPELLS_CHANGED")
 --handlerFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 
