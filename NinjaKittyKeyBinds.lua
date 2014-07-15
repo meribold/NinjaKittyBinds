@@ -11,6 +11,8 @@ local UIParent, CreateFrame = _G.UIParent, _G.CreateFrame
 --   /targetlasttarget
 --   /startattack [combat,nostealth]
 
+local secureHeader = _G.CreateFrame("Frame", nil, _G.UIParent, "SecureHandlerBaseTemplate")
+
 ---- < MACROS > --------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -20,8 +22,8 @@ local macros = {
   {
     key = "`",
     init = function(self)
-      self.button:SetAttribute("downbutton", "RightButton")
       self.button:SetAttribute("type", "macro")
+      self.button:SetAttribute("downbutton", "RightButton")
       self.button:SetAttribute("*macrotext1", "/use Stampeding Roar")
       self.button:SetAttribute("*macrotext2",
         "/cancelaura Dash\n" ..
@@ -36,8 +38,8 @@ local macros = {
   { -- Used to "/cancelform [form:5,flying]" here, too.
     key = "1",
     init = function(self)
-      self.button:SetAttribute("downbutton", "RightButton")
       self.button:SetAttribute("type", "macro")
+      self.button:SetAttribute("downbutton", "RightButton")
       self.button:SetAttribute("*macrotext1", "/use Dash")
       self.button:SetAttribute("*macrotext2",
         "/cancelaura Stampeding Roar\n" ..
@@ -118,9 +120,23 @@ local macros = {
       "/use [@party2]1",
   },
   {
-    key = "TAB", text =
-      "/cancelaura Prowl\n" .. -- When we want to Shadowmeld, we want to Shadowmeld! We don't want to be told that
-      "/use Shadowmeld",       -- "a more powerful spell is already active".
+    key = "TAB",
+    init = function(self)
+      self.button:SetAttribute("type", "macro")
+      self.button:SetAttribute("downbutton", "LeftButton")
+      self.button:SetAttribute("*macrotext1",
+        "/cancelaura Prowl\n" .. -- When we want to Shadowmeld, we want to Shadowmeld! We don't want to be told that
+        "/use Shadowmeld\n" ..   -- "a more powerful spell is already active".
+        "/use !Prowl"
+      )
+      self.button:SetAttribute("*macrotext2",
+        "/use !Prowl"
+      )
+      self.button:RegisterForClicks("AnyDown", "AnyUp")
+    end,
+    bind = function(self)
+      _G.SetBindingClick(self.key, self.button:GetName(), "RightButton")
+    end
   },
   { key = "SHIFT-TAB" },
   { key = "ALT-TAB" },
@@ -129,14 +145,46 @@ local macros = {
   },
   { key = "SHIFT-Q" },
   { key = "ALT-Q" },
+  --[[
   {
-    key = "W", text =
+    key = "W", specs = { [103] = true }, text =
       "/use Tiger's Fury\n" ..
       "/use [form:3]10\n" ..
       "/use [form:3]14",
   },
+  ]]
   {
-    key = "SHIFT-W", specs = { [103] = true, }, text =
+    key = "W", specs = { [103] = true },
+    init = function(self)
+      self.button:SetAttribute("type", "macro")
+      self.button:SetAttribute("*macrotext1",
+        "/use Tiger's Fury\n" ..
+        "/use [form:3]10\n" ..
+        "/use [form:3]14"
+      )
+      self.button:SetAttribute("*macrotext2", -- Used when we have Incarnation.
+        "/use [form:3]Nature's Vigil\n" ..
+        "/use [form:3]Tiger's Fury\n" ..
+        "/use [form:3]14\n" ..
+        "/use [form:3]10\n" ..
+        "/use [form:3]Berserk\n" ..
+        "/use [form:3]Berserking"
+      )
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
+        local spellId = select(2, GetActionInfo(owner:GetAttribute("prowlActionSlot")))
+        if spellId == 5215 then
+          return
+        elseif spellId == 102547 then
+          return "RightButton"
+        else
+          return false
+        end
+      ]])
+      self.button:RegisterForClicks("AnyDown")
+    end,
+  },
+  {
+    key = "SHIFT-W", specs = { [103] = true }, text =
       "/use [form:1]Frenzied Regeneration\n" ..
       "/use Incarnation\n" ..
       "/use Nature's Vigil\n" ..
@@ -347,7 +395,7 @@ local macros = {
   },
   { key = "ALT-H", text = "/focus arena5" },
   {
-    key = "Z",
+    key = "Z", specs = { [103] = true },
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [harm].
@@ -364,9 +412,20 @@ local macros = {
         "/use Pounce\n" ..
         "/cleartarget"
       )
-      _G.SecureHandlerWrapScript(self.button, "OnClick", self.button, [[
-        if not UnitExists("target") or not PlayerCanAttack("target") then
-          return "RightButton"
+      self.button:SetAttribute("*macrotext3", -- Used when we have Incarnation.
+        "/cancelform [form:5,flying]\n" ..
+        "/use !Prowl"
+      )
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
+        local spellId = select(2, GetActionInfo(owner:GetAttribute("prowlActionSlot")))
+        if spellId == 5215 then
+          if not UnitExists("target") or not PlayerCanAttack("target") then
+            return "RightButton"
+          end
+        elseif spellId == 102547 then
+          return "MiddleButton"
+        else
+          return false
         end
       ]])
       self.button:RegisterForClicks("AnyDown")
@@ -408,7 +467,7 @@ local macros = {
     end,
   },
   { key = "SHIFT-C", text = "/use Maim" }, -- Maim doesn't seem to auto-acquire a target.
-  { key = "ALT-C", text = "/use [@focus]Force of Nature" },
+  { key = "ALT-C", text = "/use Force of Nature" },
   { key = "V", text = "/use Symbiosis" },
   {
     key = "SHIFT-V",
@@ -433,7 +492,7 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  { key = "ALT-V" }, -- FREE!
+  { key = "ALT-V", text = "/use [@focus]Force of Nature" },
   { key = "B", text = "/use Entangling Roots" },
   { key = "SHIFT-B", text = "/use [@focus]Entangling Roots" },
   { key = "ALT-B", text = "/use Moonfire" },
@@ -505,7 +564,8 @@ local macros = {
 -- < / MACROS > ------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------
 
-local handlerFrame = CreateFrame("Frame", nil, nil, "SecureHandlerBaseTemplate")
+--local handlerFrame = CreateFrame("Frame", nil, nil, "SecureHandlerBaseTemplate")
+local handlerFrame = CreateFrame("Frame")
 
 -- http://www.wowinterface.com/forums/showthread.php?p=267998
 handlerFrame:SetScript("OnEvent", function(self, event, ...)
@@ -555,6 +615,7 @@ local function bind()
     " binding set.")
 end
 
+-- http://wowpedia.org/AddOn_loading_process#Order_of_events_fired_during_loading
 function handlerFrame:ADDON_LOADED()
   self:UnregisterEvent("ADDON_LOADED")
 
@@ -566,6 +627,33 @@ function handlerFrame:ADDON_LOADED()
       party2 = "party2",
     }
   end
+
+  local db = _G.NinjaKittyKeyBindsDB
+
+  do
+    -- Find the first action slot that Prowl (could be 5215 or 102547) is placed in. We can use it to find if
+    -- Incarnation is active or not. If we move Prowl we have to /reload; TODO: can we find the new action slot directly
+    -- even if in combat?
+    -- http://wowpedia.org/API_GetActionInfo
+    -- http://wowprogramming.com/docs/api/GetActionInfo
+    local actionType, id, subType
+    if db.prowlActionSlot then
+      actionType, id, subType = _G.GetActionInfo(db.prowlActionSlot)
+    end
+    if not actionType or actionType ~= "spell" or not id or (id ~= 5215 and id ~= 102547) then
+      db.prowlActionSlot = nil
+      for i = 1, 120 do
+        local actionType, id, subType = _G.GetActionInfo(i)
+        if actionType and actionType == "spell" and (id == 5215 or id == 102547) then
+          db.prowlActionSlot = i
+          break
+        end
+      end
+    end
+  end
+
+  secureHeader:SetAttribute("prowlActionSlot", db.prowlActionSlot)
+  --_G.print(db.prowlActionSlot, secureHeader:GetAttribute("prowlActionSlot"))
 
   do
     -- TODO: make it work for pet battles?
