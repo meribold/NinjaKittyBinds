@@ -4,5 +4,6 @@
 ## OptionalDeps: Bartender4
 ## Author: meribold (Lukas Waymann)
 ## Version: 0.1
+## SavedVariables: NinjaKittyKeyBindsDB
 
 NinjaKittyKeyBinds.lua

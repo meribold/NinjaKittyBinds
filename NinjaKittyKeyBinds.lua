@@ -3,11 +3,16 @@ setfenv(1, NinjaKittyKeyBinds)
 
 local string, math, pairs, ipairs = _G.string, _G.math, _G.pairs, _G.ipairs
 local UIParent, CreateFrame = _G.UIParent, _G.CreateFrame
-local LibStub = _G.LibStub
-local NinjaKittyKeyBinds = _G.NinjaKittyKeyBinds
 
----- < MACROS > ------------------------------------------------------------------------------------
-----------------------------------------------------------------------------------------------------
+-- Can we make a macro that targets our last target and works when a Hunter uses Play Dead and stuff? Maybe
+--   /targetlasttarget [noexists]
+-- or
+--   /stopmacro [exists]
+--   /targetlasttarget
+--   /startattack [combat,nostealth]
+
+---- < MACROS > --------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 -- Used to have "/cancelaura [form:3]Incarnation: King of the Jungle".
 
@@ -18,8 +23,12 @@ local macros = {
       self.button:SetAttribute("downbutton", "RightButton")
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", "/use Stampeding Roar")
-      self.button:SetAttribute("*macrotext2", "/cancelaura Dash\n/use Stampeding Roar")
+      self.button:SetAttribute("*macrotext2",
+        "/cancelaura Dash\n" ..
+        "/use Stampeding Roar"
+      )
       self.button:RegisterForClicks("AnyDown", "AnyUp")
+      --_G.SetMouselookOverrideBinding(self.key, "CLICK " .. self.button:GetName() .. ":MiddleButton")
     end,
   },
   { key = "SHIFT-`" },
@@ -30,7 +39,10 @@ local macros = {
       self.button:SetAttribute("downbutton", "RightButton")
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", "/use Dash")
-      self.button:SetAttribute("*macrotext2", "/cancelaura Stampeding Roar\n/use Dash")
+      self.button:SetAttribute("*macrotext2",
+        "/cancelaura Stampeding Roar\n" ..
+        "/use Dash"
+      )
       self.button:RegisterForClicks("AnyDown", "AnyUp")
     end,
   },
@@ -43,16 +55,10 @@ local macros = {
       "/cancelaura Dispersion\n" ..
       "/cancelaura Divine Shield\n" ..
       "/cancelaura Hand of Protection\n" ..
-      "--/cancelaura Prowl",
+      "/cancelaura Prowl",
   },
-  {
-    key = "3", text =
-      "/use Cyclone",
-  },
-  {
-    key = "SHIFT-3", text =
-      "/use [@focus]Cyclone",
-  },
+  { key = "3", text = "/use Cyclone" },
+  { key = "SHIFT-3", text = "/use [@focus]Cyclone" },
   { -- "/castsequence [@player] Mark of the Wild,Foo" seems to reset on death.
     key = "ALT-3", text =
       "/cancelaura Goblin Glider\n" ..
@@ -61,65 +67,44 @@ local macros = {
       "/userandom [nomounted,noflyable]Silver Covenant Hippogryph,Cenarion War Hippogryph,Swift Moonsaber," ..
         "Fossilized Raptor,Winterspring Frostsaber\n" ..
       "/use 15\n" ..
-      "/dismount"
+      "/dismount",
   },
   {
     key = "4", text =
-      "/use [@mouseover,help,nodead][help,nodead][@player]Healing Touch",
+      "/use [@mouseover,help,dead]Rebirth;[@mouseover,help]Healing Touch;[help,dead]Rebirth;[help]Healing Touch;" ..
+        "[@player]Healing Touch",
   },
   {
     key = "SHIFT-4", text =
-      "/use [@party1]Healing Touch\n" ..
+      "/use [@party1,dead]Rebirth;[@party1]Healing Touch\n" ..
       "/use [@party1]1",
   },
   {
     key = "ALT-4", text =
-      "/use [@party2]Healing Touch\n" ..
+      "/use [@party2,dead]Rebirth;[@party2]Healing Touch\n" ..
       "/use [@party2]1",
   },
-  --[[
-  {
-    key = "ALT-4", text =
-      "/use Conjured Mana Buns\n" ..
-      "/use Conjured Mana Pudding\n" ..
-      "/use Cobo Cola\n" ..
-      "/use Golden Carp Consomme",
-  },
-  ]]
-  --[[
   {
     key = "5", text =
-      "/use Renewal\n" ..
-      "/use [@mouseover,help,nodead]Cenarion Ward\n" ..
-      "/use [@player]Cenarion Ward",
+      "/use [form:1]Frenzied Regeneration\n" ..
+      "/use [@mouseover,help,dead]Revive;[@mouseover,help]Rejuvenation;[help,dead]Revive;[help]Rejuvenation;" ..
+        "[@player]Rejuvenation",
   },
   {
     key = "SHIFT-5", text =
-      "/use [@mouseover,help,nodead]Cenarion Ward\n" ..
-      "/use [help,nodead]Cenarion Ward;[@party1,exists,nodead]Cenarion Ward",
-  },
-  {
-    key = "ALT-5", text =
-      "/use [@mouseover,help,nodead]Cenarion Ward\n" ..
-      "/use [help,nodead]Cenarion Ward;[@party2,exists,nodead]Cenarion Ward",
-  },
-  ]]
-  {
-    key = "5", text =
-      "/use [@mouseover,help,nodead][help,nodead][@player]Rejuvenation",
-  },
-  {
-    key = "SHIFT-5", text =
-      "/use [@party1]Rejuvenation\n" ..
+      "/use [form:1]Frenzied Regeneration\n" ..
+      "/use [@party1,dead]Revive;[@party1]Rejuvenation\n" ..
       "/use [@party1]1",
   },
   {
     key = "ALT-5", text =
-      "/use [@party2]Rejuvenation\n" ..
+      "/use [form:1]Frenzied Regeneration\n" ..
+      "/use [@party2,dead]Revive;[@party2]Rejuvenation\n" ..
       "/use [@party2]1",
   },
   {
     key = "6", text =
+      "/use Renewal\n" ..
       "/use [@mouseover,help,nodead][help,nodead][@player]Cenarion Ward",
   },
   {
@@ -132,51 +117,24 @@ local macros = {
       "/use [@party2]Cenarion Ward\n" ..
       "/use [@party2]1",
   },
-  --[[
-  {
-    key = "6", text =
-      "/castsequence [mod:shift]reset=1 0,Tranquility\n" ..
-      "/use [mod:shift]Heart of the Wild;Might of Ursoc\n" ..
-      "/use [nomod:shift]Healthstone",
-  },
-  {
-    key = "ALT-6", text =
-    "/use Tranquility",
-  },
-  ]]
-  --[[
   {
     key = "TAB", text =
-    "/use [form:1]Frenzied Regeneration" .. '\n' ..
-    "/cancelform [form]" .. '\n' ..
-    "/dismount [mounted]" .. '\n' ..
-    "/stopcasting",
+      "/cancelaura Prowl\n" .. -- When we want to Shadowmeld, we want to Shadowmeld! We don't want to be told that
+      "/use Shadowmeld",       -- "a more powerful spell is already active".
   },
-  ]]
-  {
-    key = "TAB", text =
-      "/cancelaura Prowl\n" .. -- When we want to Shadowmeld, we want to Shadowmeld! We don't want to be told that "a
-      "/use Shadowmeld",       -- more powerful spell is already active".
-  },
+  { key = "SHIFT-TAB" },
   { key = "ALT-TAB" },
   { key = "Q", text =
     "/use [noform:5]13",
   },
+  { key = "SHIFT-Q" },
   { key = "ALT-Q" },
-  --[[
-  { key = "W", text =
-      "/use [@mouseover,help,nodead]Healing Touch;[@mouseover,help]Revive\n" ..
-      "/use [@player,nomod:shift]Healing Touch;[help,nodead]Healing Touch;[help]Revive;" ..
-        "[@party1,exists,nodead]Healing Touch;[@party1,exists]Revive",
-  },
-  ]]
   {
     key = "W", text =
       "/use Tiger's Fury\n" ..
       "/use [form:3]10\n" ..
       "/use [form:3]14",
   },
-  --{ key = "SHIFT-W", text = "/use Heart of the Wild" },
   {
     key = "SHIFT-W", specs = { [103] = true, }, text =
       "/use [form:1]Frenzied Regeneration\n" ..
@@ -188,29 +146,11 @@ local macros = {
       "/castsequence [form:3]reset=1 0,Berserk\n" ..
       "/castsequence [form:3]reset=1 0,Berserking",
   },
-  --[[
-  { key = "ALT-W", text =
-      "/use [@mouseover,help,nodead]Healing Touch;[@mouseover,help]Revive\n" ..
-      "/use [help,nodead]Healing Touch;[help]Revive;[@party2,exists,nodead]Healing Touch;" ..
-        "[@party2,exists]Revive",
-  },
-  ]]
   {
     key = "ALT-W", text =
-      "/use Conjured Mana Buns\n" ..
-      "/use Conjured Mana Pudding\n" ..
-      "/use Cobo Cola\n" ..
-      "/use Golden Carp Consomme",
+      "/castsequence reset=1 0,Tranquility\n" ..
+      "/use Heart of the Wild",
   },
-  --[[
-  {
-    key = "E", text =
-      "/use [harm,nodead,nomod:shift][@focus,harm,nodead,mod:shift]Cyclone\n" ..
-      "/stopmacro [exists][mod:shift]\n" ..
-      "/targetlasttarget\n" ..
-      "/startattack [combat,nostealth]",
-  },
-  ]]
   {
     key = "E", text =
       "/stopcasting\n" ..
@@ -218,15 +158,6 @@ local macros = {
   },
   { key = "SHIFT-E", text = "/use [exists]Mangle" },
   { key = "ALT-E", text = "/use [@mouseover,help,nodead][@player]Mark of the Wild", },
-  --[[
-  {
-    key = "R", text =
-      "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [@mouseover,help,nodead]Rejuvenation;[@mouseover,help]Rebirth\n" ..
-      "/use [@player,nomod:shift]Rejuvenation;[help,nodead]Rejuvenation;[help]Rebirth;" ..
-        "[@party1,exists,nodead]Rejuvenation;[@party1,exists]Rebirth",
-  },
-  ]]
   {
     key = "R", specs = { [103] = true }, text =
       "/use [form:1]Frenzied Regeneration\n" ..
@@ -237,30 +168,57 @@ local macros = {
       "/use [form:1]Frenzied Regeneration\n" ..
       "/use [noform:1]Bear Form",
   },
-  { -- TODO.
-    key = "ALT-R", text =
-      "",
-  },
-  --[[
   {
     key = "ALT-R", text =
-      "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [@mouseover,help,nodead]Rejuvenation;[@mouseover,help]Rebirth\n" ..
-      "/use [help,nodead]Rejuvenation;[help]Rebirth;[@party2,exists,nodead]Rejuvenation;[@party2,exists]Rebirth",
+      "/use Conjured Mana Buns\n" ..
+      "/use Conjured Mana Pudding\n" ..
+      "/use Cobo Cola\n" ..
+      "/use Golden Carp Consomme",
   },
-  ]]
+  {
+    key = "T", init = function()
+      self.button:SetAttribute("type", "macro")
+      self.button:SetAttribute("*macrotext1", -- Used when [harm].
+        "/use Faerie Fire"
+      )
+      self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
+        "/targetenemyplayer\n" ..
+        "/stopmacro [noexists][noharm]\n" ..
+        "/use Faerie Fire\n" ..
+        "/cleartarget"
+      )
+      _G.SecureHandlerWrapScript(self.button, "OnClick", self.button, [[
+        if not UnitExists("target") or not PlayerCanAttack("target") then
+          return "RightButton"
+        end
+      ]])
+      self.button:RegisterForClicks("AnyDown")
+    end,
+  },
+  {
+    key = "SHIFT-T", text =
+      "/use [@focus]Faerie Fire",
+  },
   { key = "ALT-T", text = "/use !Travel Form", },
   {
-    key = "Y", specs = { [102] = true, [103] = true, [104] = true },
-    text =
+    key = "Y", specs = { [102] = true, [103] = true, [104] = true }, text =
       "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [@mouseover,help,nodead]Remove Corruption\n" ..
-      "/use [@player,nomod][exists,help,nodead][@party1,exists,mod:shift][@party2,exists,mod:alt]Remove Corruption\n" ..
-      "/use 1",
+      "/use [@mouseover,help,nodead][help,nodead][@player]Remove Corruption",
   },
   {
-    key = "ESCAPE",
-    text =
+    key = "SHIFT-Y", specs = { [102] = true, [103] = true, [104] = true }, text =
+      "/use [form:1]Frenzied Regeneration\n" ..
+      "/use [@party1]Remove Corruption\n" ..
+      "/use [@party1]1",
+  },
+  {
+    key = "ALT-Y", specs = { [102] = true, [103] = true, [104] = true }, text =
+      "/use [form:1]Frenzied Regeneration\n" ..
+      "/use [@party2]Remove Corruption\n" ..
+      "/use [@party2]1",
+  },
+  {
+    key = "ESCAPE", text =
       "/use [form:1]Frenzied Regeneration\n" ..
       "/use [form:1]!Bear Form;[form:3]!Cat Form;[swimming]!Aquatic Form;[form:5][flyable,nocombat,outdoors]" ..
         "!Swift Flight Form;[outdoors]!Travel Form;!Cat Form",
@@ -268,11 +226,11 @@ local macros = {
   { key = "SHIFT-ESCAPE" },
   { key = "ALT-ESCAPE" },
   {
-    key = "A",
-    text =
+    key = "A", text =
       "/use [form:1]Frenzied Regeneration\n" ..
       "/cancelform [form]\n" ..
-      "/dismount [mounted]",
+      "/dismount [mounted]\n" ..
+      "/stopcasting",
   },
   { key = "SHIFT-A" },
   { key = "ALT-A" },
@@ -293,11 +251,13 @@ local macros = {
       "/castsequence [mod:shift,form:3]reset=1 0,Berserking",
   },
   ]]
-  { key = "S", text =
+  { -- Canceling form and using Wild Charge with just one click isn't possible (I think).
+    key = "S", text =
       "/stopcasting\n" ..
-      "/use [form:2/4][@mouseover,help,noform][@mouseover,harm,form:1/3][help,noform][harm,form:1/3][@party1,noform]Wild Charge\n" ..
-      "/use [@party1,help,noform]1\n" ..
-      "/use Displacer Beast",
+      "/use Displacer Beast\n" ..
+      "/use [form:2/4][@mouseover,help,noform][@mouseover,harm,form:1/3][help,noform][harm,form:1/3][@party1,noform]" ..
+        "Wild Charge\n" ..
+      "/use [@party1,noform]1\n",
   },
   {
     key = "SHIFT-S", text =
@@ -412,35 +372,43 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end
   },
+  { key = "SHIFT-Z" },
   { key = "ALT-Z" },
-  --[[
-  {
-    key = "X", text =
-      "/use Tiger's Fury\n" ..
-      "/use [form:3]10\n" ..
-      "/use [form:3]14",
-  },
-  ]]
   { key = "X", text = "/use Survival Instincts" },
-  --[[
-  {
-    key = "SHIFT-X",
-    specs = { [103] = true, },
-    text =
-      "/use [form:1]Frenzied Regeneration\n" ..
-      "/use Nature's Vigil\n" ..
-      "/use [form:3]Tiger's Fury\n" ..
-      "/use [form:3]14\n" ..
-      "/use [form:3]10\n" ..
-      "/use [form:3]Berserk\n" ..
-      "/use [form:3]Berserking",
-  },
-  ]]
   { key = "SHIFT-X", text = "/use Barkskin" },
   {
     key = "ALT-X", text =
       "/use [@mouseover,help,nodead][help,nodead][@player]Innervate",
   },
+  {
+    key = "C",
+    init = function(self)
+      self.button:SetAttribute("type", "macro")
+      self.button:SetAttribute("*macrotext1", -- Used when [harm].
+        "/use Disorienting Roar\n" ..
+        "/use Ursol's Vortex\n" ..
+        "/use [@mouseover,harm][]Mighty Bash"
+      )
+      self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
+        "/use Disorienting Roar\n" ..
+        "/use Ursol's Vortex\n" ..
+        "/use [@mouseover,harm]Mighty Bash\n" ..
+        "/stopmacro [@mouseover,harm]\n" ..
+        "/targetenemyplayer\n" ..
+        "/stopmacro [noexists][noharm]\n" ..
+        "/use Mighty Bash\n" ..
+        "/cleartarget"
+      )
+      _G.SecureHandlerWrapScript(self.button, "OnClick", self.button, [[
+        if not UnitExists("target") or not PlayerCanAttack("target") then
+          return "RightButton"
+        end
+      ]])
+      self.button:RegisterForClicks("AnyDown")
+    end,
+  },
+  { key = "SHIFT-C", text = "/use Maim" }, -- Maim doesn't seem to auto-acquire a target.
+  { key = "ALT-C", text = "/use [@focus]Force of Nature" },
   { key = "V", text = "/use Symbiosis" },
   {
     key = "SHIFT-V",
@@ -465,7 +433,6 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  { key = "ALT-C", text = "/use [@focus]Force of Nature" },
   { key = "ALT-V" }, -- FREE!
   { key = "B", text = "/use Entangling Roots" },
   { key = "SHIFT-B", text = "/use [@focus]Entangling Roots" },
@@ -491,21 +458,49 @@ local macros = {
       "/startattack [exists,harm]\n" ..
       "/use [exists,harm]Skull Bash",
   },
-  { key = "SHIFT-BUTTON4", text = "/focus", },
-  { key = "BUTTON5", text =
-      "/targetfriendplayer [nomod:shift]\n" ..
-      "/targetfriend [mod:shift]",
+  {
+    key = "BUTTON4", init = function(self)
+      self.button:SetAttribute("type", "macro")
+      self.button:SetAttribute("*macrotext1", -- Used when UnitExists("target") and UnitExists("focus").
+        "/cleartarget\n" ..
+        "/targetlasttarget\n" ..
+        "/tar focus\n" ..
+        "/targetlasttarget\n" ..
+        "/focus [@target,exists]\n" ..
+        "/targetlasttarget"
+      )
+      self.button:SetAttribute("*macrotext2", -- Used when UnitExists("target") and not UnitExists("focus").
+        "/focus\n" ..
+        "/cleartarget"
+      )
+      self.button:SetAttribute("*macrotext3", -- Used when not UnitExists("target") and UnitExists("focus").
+        "/tar focus\n" ..
+        "/clearfocus"
+      )
+      _G.SecureHandlerWrapScript(self.button, "OnClick", self.button, [[
+        local macroText = ""
+        if UnitExists("target") then
+          if UnitExists("focus") then
+            -- ...
+          else
+            return "RightButton"
+          end
+        else
+          if UnitExists("focus") then
+            return "MiddleButton"
+          else
+            return false
+          end
+        end
+      ]])
+      self.button:RegisterForClicks("AnyDown")
+    end,
   },
-}
-
--- These macros are used only when mouselooking.
-local mouselookMacros = {
-  --[==[
-  R = { text = [[
-/use [form:1]Frenzied Regeneration
-/use [@player,nomod:shift]Rejuvenation;[help,nodead]Rejuvenation;[help]Rebirth;[@party1,exists,nodead]Rejuvenation;[@party1,exists]Rebirth
-  ]]},
-  --]==]
+  { key = "SHIFT-BUTTON4", text = "/focus", },
+  { key = "ALT-BUTTON4" }, -- FREE!
+  { key = "BUTTON5", text = "/targetfriendplayer" },
+  { key = "SHIFT-BUTTON5", text = "/targetfriend" },
+  { key = "ALT-BUTTON5" }, -- FREE!
 }
 -- < / MACROS > ------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------
@@ -518,31 +513,44 @@ handlerFrame:SetScript("OnEvent", function(self, event, ...)
 end)
 
 local function bind()
+  -- TODO: start by unbinding a lot of things? GetBinding(index) only returns command names and keys bound to binding
+  -- ID's (http://wowpedia.org/BindingID).
+
   for _, macro in _G.ipairs(macros) do
     _G.assert(macro.key)
     --if not macro.specs or macro.specs[specID] then
-      if _G.type(macro.bind) == "function" then
-        macro:bind()
-      elseif macro.button then
-        _G.SetBindingClick(macro.key, macro.button:GetName(), "LeftButton")
-      elseif not macro.text then
-        _G.SetBinding(macro.key, "CLICK NinjaKittyKeyBindsDummyButton")
-      end
+        if _G.type(macro.bind) == "function" then
+          macro:bind()
+        elseif macro.button then
+          _G.SetBindingClick(macro.key, macro.button:GetName(), "LeftButton")
+        elseif not macro.text then
+          _G.SetBinding(macro.key, "CLICK NinjaKittyKeyBindsDummyButton")
+        end
     --end
   end
 
-  _G.SetBindingClick("BUTTON4", "NinjaKittyKeyBindsBUTTON4Button")
-  _G.SetBindingClick("A", "NinjaKittyKeyBindsAButton")
-  _G.SetBindingClick("D", "NinjaKittyKeyBindsDButton")
-  --_G.SetBindingClick("Z", "NinjaKittyKeyBindsZButton")
-  _G.SetBindingClick("C", "NinjaKittyKeyBindsCButton")
-  --_G.SetBindingClick("V", "NinjaKittyKeyBindsVButton")
-  --_G.SetBindingClick("K", "NinjaKittyKeyBindsKButton")
+  -- See http://wowprogramming.com/docs/api_types#binding for the first parameter, http://wowpedia.org/BindingID for the
+  -- second.
+  _G.SetBinding("PRINTSCREEN", "SCREENSHOT")
+  _G.SetBinding("F10", "TOGGLEGAMEMENU")
+  _G.SetBinding("U", "TOGGLEWORLDMAP")
+  _G.SetBinding("I", "OPENALLBAGS")
+  _G.SetBinding("O", "TOGGLESOCIAL")
+  _G.SetBinding("-", "MASTERVOLUMEDOWN")
+  _G.SetBinding("=", "MASTERVOLUMEUP")
+  --_G.SetBinding("F", "INTERACTMOUSEOVER")
+  _G.SetBinding("J", "TOGGLEAUTORUN")
+  _G.SetBinding("ENTER", "OPENCHAT")
+  _G.SetBinding("/", "OPENCHATSLASH")
+  _G.SetBinding("SPACE", "MOVEFORWARD")
   _G.SetBinding("BUTTON1", "CAMERAORSELECTORMOVE")
   _G.SetBinding("BUTTON2", "INTERACTMOUSEOVER")
-  --_G.SetBinding("F", "INTERACTMOUSEOVER")
+  _G.SetBinding("BUTTON3", "JUMP")
+  _G.SetBinding("CTRL-MOUSEWHEELUP", "CAMERAZOOMIN")
+  _G.SetBinding("CTRL-MOUSEWHEELDOWN", "CAMERAZOOMOUT")
 
   _G.SaveBindings(_G.GetCurrentBindingSet())
+
   _G.print("Commands bound and saved as " .. (_G.GetCurrentBindingSet() == 1 and "account" or "character specific") ..
     " binding set.")
 end
@@ -550,15 +558,18 @@ end
 function handlerFrame:ADDON_LOADED()
   self:UnregisterEvent("ADDON_LOADED")
 
+  _G.assert(not _G.InCombatLockdown())
+
+  if not _G.NinjaKittyKeyBindsDB then
+    _G.NinjaKittyKeyBindsDB = {
+      party1 = "party1",
+      party2 = "party2",
+    }
+  end
+
   do
     -- TODO: make it work for pet battles?
     local overrideBarStateHandler = CreateFrame("Frame", nil, nil, "SecureHandlerStateTemplate")
-
-    --[[
-    for _, v in ipairs({"A", "S", "D", "F", "G", "H"}) do
-      overrideBarStateHandler:SetFrameRef(v .. "Button", _G["NinjaKittyKeyBinds" .. v .. "Button"])
-    end
-    ]]
 
     -- We don't use the first action bar as the possess bar because skills are put on it automatically while leveling.
     overrideBarStateHandler:SetAttribute("_onstate-overridebar", [[
@@ -624,21 +635,7 @@ function handlerFrame:PLAYER_LOGIN()
     end
   end
 
-  --[[
-  for _, macro in _G.ipairs(mouselookMacros) do
-    _G.assert(macro.key)
-    if macro.text then
-      if not macro.specs or macro.specs[specID] then
-        macro.button = macro.button or CreateFrame("Button", "NinjaKittyKeyBinds" .. macro.key .. "Button", UIParent,
-                                                   "SecureActionButtonTemplate")
-        macro.button:SetAttribute("*type2", "macro")
-        macro.button:SetAttribute("*macrotext2", macro["text"])
-      end
-    end
-  end
-  --]]
-
-  for _, macros in _G.ipairs({macros, mouselookMacros}) do
+  for _, macros in _G.ipairs({ macros }) do
     for _, macro in _G.ipairs(macros) do
       if _G.type(macro.text)  == "string" and macro.button then
         -- By default, a button only receives the left mouse button's "up" action.
@@ -647,12 +644,8 @@ function handlerFrame:PLAYER_LOGIN()
     end
   end
 
-  -- Canceling form and using Wild Charge with just one use of the macro doesn't work.
-
-  for key, macro in _G.pairs(mouselookMacros) do
-    _G.SetMouselookOverrideBinding(macro.key, "CLICK " .. macro["button"]:GetName() .. ":RightButton")
-  end
-
+  -------------------------------------------------------------------------------------------------
+  --[=[
   do --[[ BUTTON4 Action Button --]]
     local actionButton = CreateFrame("Button", "NinjaKittyKeyBindsBUTTON4Button", UIParent,
                                      "SecureActionButtonTemplate")
@@ -662,25 +655,23 @@ function handlerFrame:PLAYER_LOGIN()
 
     --[[
     The macro for swapping target and focus (given both exists) would normally be:
+      /tar focus
+      /targetlasttarget
+      /focus
+      /targetlasttarget
 
-    /tar focus
-    /targetlasttarget
-    /focus
-    /targetlasttarget
+    After the first two lines the target is unchanged and the focus is also the last target. Now we can simply focus the
+    target and target the last target (which is the previous focus).
 
-    After the first two lines the target is unchanged and the focus is also the last target. Now we
-    can simply focus the target and target the last target (which is the previous focus).
+    However, this macro won't result in the expected behaviour if target and focus refer to the same unit: "/tar focus"
+    will have no effect (not even that of changing the last target) and "/targetlasttarget" will actually target the
+    last target. Thus, next it will focus the last target and then restore the target.
 
-    However, this macro won't result in the expected behaviour if target and focus refer to the same
-    unit: "/tar focus" will have no effect (not even that of changing the last target) and
-    "/targetlasttarget" will actually target the last target. Thus, next it will focus the last
-    target and then restore the target.
-
-    The longer version used below will first clear the last target. Targeting the focus still does
-    nothing, targeting the last target will clear the target, "/focus [@target,exists]" will do
-    nothing and the last "/targetlasttarget" will restore the target.
-    --]]
-    local onState = [=[
+    The longer version used below will first clear the last target. Targeting the focus still does nothing, targeting
+    the last target will clear the target, "/focus [@target,exists]" will do nothing and the last "/targetlasttarget"
+    will restore the target.
+    ]]
+    local onState = [[
       local macroText = ""
       if UnitExists("target") then
         if UnitExists("focus") then
@@ -708,7 +699,7 @@ function handlerFrame:PLAYER_LOGIN()
         end
       end
       self:GetFrameRef("actionButton"):SetAttribute("macrotext", macroText)
-    ]=]
+    ]]
 
     stateHandler:SetFrameRef("actionButton", actionButton)
 
@@ -721,9 +712,11 @@ function handlerFrame:PLAYER_LOGIN()
 
     actionButton:RegisterForClicks("AnyDown")
   end --[[ BUTTON4 Action Button --]]
+  ]=]
   -------------------------------------------------------------------------------------------------
 
   -------------------------------------------------------------------------------------------------
+  --[=[
   do --[[ T Action Button --]]
     local actionButton = CreateFrame("Button", "NinjaKittyKeyBindsTButton", UIParent,
                           "SecureActionButtonTemplate")
@@ -763,6 +756,7 @@ function handlerFrame:PLAYER_LOGIN()
 
     actionButton:RegisterForClicks("AnyDown")
   end --[[ T Action Button --]]
+  ]=]
   -------------------------------------------------------------------------------------------------
 
   -------------------------------------------------------------------------------------------------
@@ -826,12 +820,12 @@ function handlerFrame:PLAYER_LOGIN()
     actionButton:RegisterForClicks("AnyDown")
   end --[[ A Action Button --]]
   --]=]
-  --------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------------------
 
-  -------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------------------
+  --[=[
   do --[[ C Action Button --]]
-    local actionButton = CreateFrame("Button", "NinjaKittyKeyBindsCButton", UIParent,
-                                     "SecureActionButtonTemplate")
+    local actionButton = CreateFrame("Button", "NinjaKittyKeyBindsCButton", UIParent, "SecureActionButtonTemplate")
     actionButton:SetAttribute("*type1", "macro")
 
     actionButton:SetAttribute("targetExists", [[
@@ -863,6 +857,7 @@ function handlerFrame:PLAYER_LOGIN()
 
     actionButton:RegisterForClicks("AnyDown")
   end --[[ C Action Button --]]
+  ]=]
   --------------------------------------------------------------------------------------------------
 
   if specID == 103 then -- Feral.
@@ -1244,9 +1239,11 @@ function handlerFrame:PLAYER_LOGIN()
     end --[[ V Action Button --]]
     ]=]
     ------------------------------------------------------------------------------------------------
+    --[=[
     self:Execute([[
 
     ]])
+    ]=]
   end
   ---- < / UNIQUE BINDINGS > -----------------------------------------------------------------------
 end
