@@ -176,7 +176,7 @@ local macros = {
       "/use Golden Carp Consomme",
   },
   {
-    key = "T", init = function()
+    key = "T", init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [harm].
         "/use Faerie Fire"
