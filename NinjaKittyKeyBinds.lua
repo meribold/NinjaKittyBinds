@@ -1,8 +1,5 @@
-NinjaKittyKeyBinds = { _G = _G }
-setfenv(1, NinjaKittyKeyBinds)
-
-local string, math, pairs, ipairs = _G.string, _G.math, _G.pairs, _G.ipairs
-local UIParent, CreateFrame = _G.UIParent, _G.CreateFrame
+NinjaKittyBinds = { _G = _G }
+setfenv(1, NinjaKittyBinds)
 
 -- Can we make a macro that targets our last target and works when a Hunter uses Play Dead and stuff? Maybe
 --   /targetlasttarget [noexists]
@@ -10,6 +7,13 @@ local UIParent, CreateFrame = _G.UIParent, _G.CreateFrame
 --   /stopmacro [exists]
 --   /targetlasttarget
 --   /startattack [combat,nostealth]
+
+-- Can't target totems: Healing Stream Totem, Windwalk Totem, Earthbind Totem, Earthgrab Totem, Mana Tide Totem,
+-- Healing Tide Totem, Capacitor Totem, Spirit Link Totem, ...
+
+-- I think "/use [@party1]Rejuvenation" while having a party1 but being far away causes Rejuvenation to wait for us
+-- clicking a target. "/use [@party1,exists]Rejuvenation" is the same. "/use [@party1,help] Rejuvenation" doesn't do it.
+-- This seems like a better fix than "/use 1".
 
 local secureHeader = _G.CreateFrame("Frame", nil, _G.UIParent, "SecureHandlerBaseTemplate")
 
@@ -77,14 +81,37 @@ local macros = {
         "[@player]Healing Touch",
   },
   {
-    key = "SHIFT-4", text =
-      "/use [@party1,dead]Rebirth;[@party1]Healing Touch\n" ..
-      "/use [@party1]1",
+    key = "SHIFT-4",
+    update = function(self)
+      self.button:SetAttribute("*macrotext1",
+        "/use [@" .. db.party1 .. ",help,dead]Rebirth;[@" .. db.party1 .. ",help]Healing Touch"
+      )
+    end,
   },
+  --[=[
+  { -- This would be nice, but we can't get the name of a targeted party or raid member from a restricted environment.
+    key = "SHIFT-4",
+    init = function(self)
+      self.button:SetAttribute("type", "macro")
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
+        if not self:GetAttribute("party1") or self:GetAttribute("party1") ~= owner:GetAttribute("party1") then
+          local party1 = owner:GetAttribute("party1")
+          self:SetAttribute("party1", party1)
+          local text = "/use [@" .. party1 .. ",help,dead]Rebirth;[@" .. party1 .. ",help]Healing Touch"
+          self:SetAttribute("*macrotext1", text)
+        end
+      ]])
+      self.button:RegisterForClicks("AnyDown")
+    end,
+  },
+  ]=]
   {
-    key = "ALT-4", text =
-      "/use [@party2,dead]Rebirth;[@party2]Healing Touch\n" ..
-      "/use [@party2]1",
+    key = "ALT-4",
+    update = function(self)
+      self.button:SetAttribute("*macrotext1",
+        "/use [@" .. db.party2 .. ",help,dead]Rebirth;[@" .. db.party2 .. ",help]Healing Touch"
+      )
+    end,
   },
   {
     key = "5", text =
@@ -93,31 +120,49 @@ local macros = {
         "[@player]Rejuvenation",
   },
   {
-    key = "SHIFT-5", text =
-      "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [@party1,dead]Revive;[@party1]Rejuvenation\n" ..
-      "/use [@party1]1",
+    key = "SHIFT-5",
+    update = function(self)
+      self.button:SetAttribute("*macrotext1",
+        "/use [form:1]Frenzied Regeneration\n" ..
+        "/use [@" .. db.party1 .. ",help,dead]Revive;[@" .. db.party1 .. ",help]Rejuvenation"
+      )
+    end,
   },
   {
-    key = "ALT-5", text =
-      "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [@party2,dead]Revive;[@party2]Rejuvenation\n" ..
-      "/use [@party2]1",
+    key = "ALT-5",
+    update = function(self)
+      self.button:SetAttribute("*macrotext1",
+        "/use [form:1]Frenzied Regeneration\n" ..
+        "/use [@" .. db.party2 .. ",help,dead]Revive;[@" .. db.party2 .. ",help]Rejuvenation"
+      )
+    end,
   },
   {
     key = "6", text =
       "/use Renewal\n" ..
       "/use [@mouseover,help,nodead][help,nodead][@player]Cenarion Ward",
   },
+  --[[
   {
     key = "SHIFT-6", text =
       "/use [@party1]Cenarion Ward\n" ..
       "/use [@party1]1",
+  },]]
+  {
+    key = "SHIFT-6",
+    update = function(self)
+      self.button:SetAttribute("*macrotext1",
+        "/use [@" .. db.party1 .. ",help]Cenarion Ward"
+      )
+    end,
   },
   {
-    key = "ALT-6", text =
-      "/use [@party2]Cenarion Ward\n" ..
-      "/use [@party2]1",
+    key = "ALT-6",
+    update = function(self)
+      self.button:SetAttribute("*macrotext1",
+        "/use [@" .. db.party2 .. ",help]Cenarion Ward"
+      )
+    end,
   },
   {
     key = "TAB",
@@ -152,7 +197,10 @@ local macros = {
       self.button:SetAttribute("*macrotext1",
         "/use Tiger's Fury\n" ..
         "/use [form:3]10\n" ..
-        "/use [form:3]14"
+        "/use [form:3]14\n" ..
+        "/castsequence [form:3]reset=1 0,10\n" ..
+        "/castsequence [form:3]reset=1 0,Berserk\n" ..
+        "/castsequence [form:3]reset=1 0,Berserking"
       )
       self.button:SetAttribute("*macrotext2", -- Used when we have Incarnation.
         "/use [form:3]Nature's Vigil\n" ..
@@ -196,7 +244,29 @@ local macros = {
       "/stopcasting\n" ..
       "/use Typhoon",
   },
-  { key = "SHIFT-E", text = "/use [exists]Mangle" },
+  {
+    key = "SHIFT-E",
+    init = function(self)
+      self.button:SetAttribute("type", "macro")
+      self.button:SetAttribute("*macrotext1",
+        "/use [exists]Mangle"
+      )
+      self.button:SetAttribute("*macrotext2", -- Used when we have Incarnation.
+        "/use [harm]Pounce" -- Pounce auto-acquires a target when without a hostile target.
+      )
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
+        local spellId = select(2, GetActionInfo(owner:GetAttribute("prowlActionSlot")))
+        if spellId == 5215 then
+          return
+        elseif spellId == 102547 then
+          return "RightButton"
+        else
+          return false
+        end
+      ]])
+      self.button:RegisterForClicks("AnyDown")
+    end,
+  },
   { key = "ALT-E", text = "/use [@mouseover,help,nodead][@player]Mark of the Wild", },
   {
     key = "R", specs = { [103] = true }, text =
@@ -216,7 +286,8 @@ local macros = {
       "/use Golden Carp Consomme",
   },
   {
-    key = "T", init = function(self)
+    key = "T",
+    init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [harm].
         "/use Faerie Fire"
@@ -227,7 +298,7 @@ local macros = {
         "/use Faerie Fire\n" ..
         "/cleartarget"
       )
-      _G.SecureHandlerWrapScript(self.button, "OnClick", self.button, [[
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         if not UnitExists("target") or not PlayerCanAttack("target") then
           return "RightButton"
         end
@@ -246,16 +317,22 @@ local macros = {
       "/use [@mouseover,help,nodead][help,nodead][@player]Remove Corruption",
   },
   {
-    key = "SHIFT-Y", specs = { [102] = true, [103] = true, [104] = true }, text =
-      "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [@party1]Remove Corruption\n" ..
-      "/use [@party1]1",
+    key = "SHIFT-Y", specs = { [102] = true, [103] = true, [104] = true },
+    update = function(self)
+      self.button:SetAttribute("*macrotext1",
+        "/use [form:1]Frenzied Regeneration\n" ..
+        "/use [@" .. db.party1 .. ",help]Remove Corruption"
+      )
+    end,
   },
   {
-    key = "ALT-Y", specs = { [102] = true, [103] = true, [104] = true }, text =
-      "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [@party2]Remove Corruption\n" ..
-      "/use [@party2]1",
+    key = "ALT-Y", specs = { [102] = true, [103] = true, [104] = true },
+    update = function(self)
+      self.button:SetAttribute("*macrotext1",
+        "/use [form:1]Frenzied Regeneration\n" ..
+        "/use [@" .. db.party2 .. ",help]Remove Corruption"
+      )
+    end,
   },
   {
     key = "ESCAPE", text =
@@ -267,6 +344,8 @@ local macros = {
   { key = "ALT-ESCAPE" },
   {
     key = "A", text =
+      "/use [noform,swimming]Aquatic Form;[noform,flyable,nocombat,outdoors]Swift Flight Form;" ..
+        "[noform,outdoors]!Travel Form\n" ..
       "/use [form:1]Frenzied Regeneration\n" ..
       "/cancelform [form]\n" ..
       "/dismount [mounted]\n" ..
@@ -276,28 +355,24 @@ local macros = {
   { key = "ALT-A" },
   --[[
   {
-    key = "S",
-    specs = { [103] = true, },
-    text =
-      "/use [form:1]Frenzied Regeneration" .. '\n' ..
-      "/use [mod:shift]Incarnation;[form:3]Tiger's Fury" .. '\n' ..
-      "/use [mod:shift]Nature's Vigil" .. '\n' ..
-      "/use [nomod:shift,form:3]10" .. '\n' ..
-      "/use [nomod:shift,form:3]14" .. '\n' ..
-      "/castsequence [mod:shift,form:3]reset=1 0,Tiger's Fury" .. '\n' ..
-      "/castsequence [mod:shift,form:3]reset=1 0,14" .. '\n' ..
-      "/castsequence [mod:shift,form:3]reset=1 0,10" .. '\n' ..
-      "/castsequence [mod:shift,form:3]reset=1 0,Berserk" .. '\n' ..
-      "/castsequence [mod:shift,form:3]reset=1 0,Berserking",
-  },
-  ]]
-  { -- Canceling form and using Wild Charge with just one click isn't possible (I think).
     key = "S", text =
       "/stopcasting\n" ..
       "/use Displacer Beast\n" ..
       "/use [form:2/4][@mouseover,help,noform][@mouseover,harm,form:1/3][help,noform][harm,form:1/3][@party1,noform]" ..
         "Wild Charge\n" ..
-      "/use [@party1,noform]1\n",
+      "/use [@party1,noform]1",
+  },
+  ]]
+  { -- Canceling form and using Wild Charge with just one click isn't possible (I think).
+    key = "S",
+    update = function(self)
+      self.button:SetAttribute("*macrotext1",
+        "/stopcasting\n" ..
+        "/use Displacer Beast\n" ..
+        "/use [form:2/4][@mouseover,help,noform][@mouseover,harm,form:1/3][help,noform][harm,form:1/3][@" .. db.party1
+          .. ",help,noform]Wild Charge"
+      )
+    end,
   },
   {
     key = "SHIFT-S", text =
@@ -309,17 +384,25 @@ local macros = {
     key = "D",
     init = function(self)
       self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("*macrotext1", -- Used when [harm].
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
+        if not UnitExists("target") or not PlayerCanAttack("target") then
+          return "RightButton"
+        end
+      ]])
+      self.button:RegisterForClicks("AnyDown")
+    end,
+    update = function(self)
+      self.button:SetAttribute("*macrotext1",
         "/stopcasting\n" ..
-        "/use [@party2,noform]Wild Charge\n" ..
-        "/use [@party2,noform]1\n" ..
+        "/use [@" .. db.party2 .. ",help,noform]Wild Charge\n" ..
+        --"/use [@" .. db.party2 .. ",help,noform]1\n" ..
         "/use [@mouseover,harm,form:1/3][harm,form:1/3]Skull Bash"
       )
       self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
         "/stopcasting\n" ..
-        "/use [@party2,noform]Wild Charge\n" ..
-        "/use [@party2,noform]1\n" ..
-        "/stopmacro [@party2,help,noform:3]\n" ..
+        "/use [@" .. db.party2 .. ",help,noform]Wild Charge\n" ..
+        --"/use [@" .. db.party2 .. ",help,noform]1\n" ..
+        "/stopmacro [@" .. db.party2 .. ",help,noform]\n" ..
         "/use [@mouseover,harm,form:1/3]Skull Bash\n" ..
         "/stopmacro [@mouseover,harm,form:1/3]\n" ..
         "/targetenemyplayer\n" ..
@@ -327,12 +410,6 @@ local macros = {
         "/use [form:1/3]Skull Bash\n" ..
         "/cleartarget"
       )
-      _G.SecureHandlerWrapScript(self.button, "OnClick", self.button, [[
-        if not UnitExists("target") or not PlayerCanAttack("target") then
-          return "RightButton"
-        end
-      ]])
-      self.button:RegisterForClicks("AnyDown")
     end,
   },
   { key = "SHIFT-D", text = "/use [@focus,harm]Skull Bash" },
@@ -362,7 +439,7 @@ local macros = {
       -- Our snippets get these arguments: self, button, down.  See
       -- "http://wowprogramming.com/utils/xmlbrowser/live/FrameXML/SecureTemplates.lua" and "Iriel’s Field Guide to
       -- Secure Handlers".
-      _G.SecureHandlerWrapScript(self.button, "OnClick", self.button, [[
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         --if GetBonusBarOffset() ~= 3 then
           if UnitExists("target") and PlayerCanAttack("target") then
             return "RightButton"
@@ -450,7 +527,7 @@ local macros = {
         "/use Mighty Bash\n" ..
         "/cleartarget"
       )
-      _G.SecureHandlerWrapScript(self.button, "OnClick", self.button, [[
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         if not UnitExists("target") or not PlayerCanAttack("target") then
           return "RightButton"
         end
@@ -476,7 +553,7 @@ local macros = {
         "/use Rake\n" ..
         "/cleartarget"
       )
-      _G.SecureHandlerWrapScript(self.button, "OnClick", self.button, [[
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         if not UnitExists("target") or not PlayerCanAttack("target") then
           return "RightButton"
         end
@@ -494,16 +571,16 @@ local macros = {
       "/use [form:1/3,mod:shift]Swipe;[form:1/3]Thrash\n" ..
       "/startattack [harm,nodead,form:1/3]",
   },
-  { key = "ALT-N" },
-  -- Can't target totems: Healing Stream Totem, Windwalk Totem, Earthbind Totem, Earthgrab Totem, Mana Tide Totem,
-  -- Healing Tide Totem, Capacitor Totem, Spirit Link Totem, ...
-  { key = "ALT-MOUSEWHEELUP", text =
+  { key = "ALT-N" }, -- FREE!
+  {
+    key = "ALT-MOUSEWHEELUP", text =
       "/targetexact Psyfiend\n" ..
       "/startattack [exists,harm]\n" ..
       "/use [exists,harm]Wild Charge\n" ..
       "/use [exists,harm]Mangle",
   },
-  { key = "ALT-MOUSEWHEELDOWN", text =
+  {
+    key = "ALT-MOUSEWHEELDOWN", text =
       "/targetexact Wild Mushroom\n" ..
       "/targetexact Psyfiend\n" ..
       "/startattack [exists,harm]\n" ..
@@ -545,7 +622,7 @@ local macros = {
         "/tar focus\n" ..
         "/clearfocus"
       )
-      _G.SecureHandlerWrapScript(self.button, "OnClick", self.button, [[
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         local macroText = ""
         if UnitExists("target") then
           if UnitExists("focus") then
@@ -564,7 +641,7 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  { key = "SHIFT-BUTTON4", text = "/focus", },
+  { key = "SHIFT-BUTTON4", text = "/focus" },
   { key = "ALT-BUTTON4" }, -- FREE!
   { key = "BUTTON5", text = "/targetfriendplayer" },
   { key = "SHIFT-BUTTON5", text = "/targetfriend" },
@@ -573,7 +650,7 @@ local macros = {
 -- < / MACROS > --------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 
-local handlerFrame = CreateFrame("Frame")
+local handlerFrame = _G.CreateFrame("Frame")
 
 -- http://www.wowinterface.com/forums/showthread.php?p=267998
 handlerFrame:SetScript("OnEvent", function(self, event, ...)
@@ -586,15 +663,13 @@ local function bind()
 
   for _, macro in _G.ipairs(macros) do
     _G.assert(macro.key)
-    --if not macro.specs or macro.specs[specID] then
-        if _G.type(macro.bind) == "function" then
-          macro:bind()
-        elseif macro.button then
-          _G.SetBindingClick(macro.key, macro.button:GetName(), "LeftButton")
-        elseif not macro.text then
-          _G.SetBinding(macro.key, "CLICK NinjaKittyKeyBindsDummyButton")
-        end
-    --end
+    if _G.type(macro.bind) == "function" then
+      macro:bind()
+    elseif macro.button then
+      _G.SetBindingClick(macro.key, macro.button:GetName(), "LeftButton")
+    else--[[if not macro.button then]]
+      _G.SetBinding(macro.key, "CLICK NinjaKittyBindsDummyButton")
+    end
   end
 
   -- See http://wowprogramming.com/docs/api_types#binding for the first parameter, http://wowpedia.org/BindingID for the
@@ -629,16 +704,27 @@ function handlerFrame:ADDON_LOADED()
 
   _G.assert(not _G.InCombatLockdown())
 
-  if not _G.NinjaKittyKeyBindsDB then
-    _G.NinjaKittyKeyBindsDB = {
-      party1 = "party1",
-      party2 = "party2",
-    }
+  if not _G.NinjaKittyBindsDB then
+    _G.NinjaKittyBindsDB = {}
   end
+
+  db = _G.NinjaKittyBindsDB
+
+  local databaseDefaults = {
+    party1 = "party1",
+    party2 = "party2",
+  }
+
+  for k, v in _G.pairs(databaseDefaults) do
+    if not db[k] then db[k] = v end
+  end
+
+  --secureHeader:SetAttribute("party1", db.party1)
+  --secureHeader:SetAttribute("party2", db.party2)
 
   do
     -- TODO: make it work for pet battles?
-    local overrideBarStateHandler = CreateFrame("Frame", nil, nil, "SecureHandlerStateTemplate")
+    local overrideBarStateHandler = _G.CreateFrame("Frame", nil, nil, "SecureHandlerStateTemplate")
 
     -- We don't use the first action bar as the possess bar because skills are put on it automatically while leveling.
     overrideBarStateHandler:SetAttribute("_onstate-overridebar", [[
@@ -685,6 +771,15 @@ function handlerFrame:ADDON_LOADED()
   self.ADDON_LOADED = nil
 end
 
+function _G.NinjaKittyBinds:update()
+  _G.assert(not _G.InCombatLockdown())
+  for _, macro in _G.ipairs(macros) do
+    if macro.update and macro.button then
+      macro:update()
+    end
+  end
+end
+
 -- http://wowpedia.org/AddOn_loading_process#Order_of_events_fired_during_loading
 function handlerFrame:PLAYER_LOGIN()
   _G.assert(not _G.InCombatLockdown())
@@ -695,7 +790,6 @@ function handlerFrame:PLAYER_LOGIN()
     -- even if in combat?
     -- http://wowpedia.org/API_GetActionInfo
     -- http://wowprogramming.com/docs/api/GetActionInfo
-    local db = _G.NinjaKittyKeyBindsDB
     local actionType, id, subType
     if db.prowlActionSlot then
       actionType, id, subType = _G.GetActionInfo(db.prowlActionSlot)
@@ -718,22 +812,24 @@ function handlerFrame:PLAYER_LOGIN()
   for _, macro in _G.ipairs(macros) do
     _G.assert(macro.key)
     if not macro.specs or macro.specs[specID] then
-      if macro.text then
-        macro.button = CreateFrame("Button", "NinjaKittyKeyBinds" .. macro.key .. "Button", UIParent,
-                                   "SecureActionButtonTemplate")
-        macro.button:SetAttribute("*type1", "macro")
-        macro.button:SetAttribute("*macrotext1", macro.text)
-      elseif macro.init and _G.type(macro.init) == "function" then
-        macro.button = CreateFrame("Button", "NinjaKittyKeyBinds" .. macro.key .. "Button", UIParent,
-                                   "SecureActionButtonTemplate")
+      if macro.text or macro.init or macro.update then
+        macro.button = _G.CreateFrame("Button", "NinjaKittyBinds" .. macro.key .. "Button", _G.UIParent,
+          "SecureActionButtonTemplate")
+      end
+      if macro.init --[[and _G.type(macro.init) == "function"]] then
         macro:init()
+      elseif macro.button then
+        macro.button:SetAttribute("type", "macro")
+        -- By default, a button only receives the left mouse button's "up" action.
+        macro.button:RegisterForClicks("AnyDown")
+      end
+      if macro.text then
+        macro.button:SetAttribute("*macrotext1", macro.text)
       end
     end
-    if _G.type(macro.text) == "string" and macro.button then
-      -- By default, a button only receives the left mouse button's "up" action.
-      macro.button:RegisterForClicks("AnyDown")
-    end
   end
+
+  update()
 end
 
 function handlerFrame:PLAYER_ENTERING_WORLD()
