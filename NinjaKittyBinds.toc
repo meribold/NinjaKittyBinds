@@ -1,0 +1,9 @@
+## Interface: 50400
+## Title: NinjaKittyBinds
+## Notes: Macros, wrapped into an AddOn
+## OptionalDeps: Bartender4
+## Author: meribold
+## Version: 0.1
+## SavedVariables: NinjaKittyBindsDB
+
+NinjaKittyBinds.lua
