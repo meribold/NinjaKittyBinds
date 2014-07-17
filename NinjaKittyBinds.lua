@@ -142,7 +142,7 @@ local macros = {
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         local mount
         if IsFlyableArea() then
-          mount = favoriteMounts[math.random(#favoriteFlyingMounts)]
+          mount = favoriteFlyingMounts[math.random(#favoriteFlyingMounts)]
         else
           mount = favoriteMounts[math.random(#favoriteMounts)]
         end
