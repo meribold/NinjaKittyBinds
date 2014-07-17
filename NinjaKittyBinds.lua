@@ -39,7 +39,7 @@ local macros = {
   },
   { key = "SHIFT-`" },
   { key = "ALT-`" },
-  { -- Used to "/cancelform [form:5,flying]" here, too.
+  {
     key = "1",
     init = function(self)
       self.button:SetAttribute("type", "macro")
@@ -65,13 +65,51 @@ local macros = {
   },
   { key = "3", text = "/use Cyclone" },
   { key = "SHIFT-3", text = "/use [@focus]Cyclone" },
-  { -- "/castsequence [@player] Mark of the Wild,Foo" seems to reset on death.
-    key = "ALT-3", text =
+  {
+    key = "ALT-3",
+    init = function(self)
+      self.button:SetAttribute("type", "macro")
+      local favoriteMounts = {
+        ["Silver Covenant Hippogryph"] = true,
+        ["Cenarion War Hippogryph"] = true,
+        ["Swift Moonsaber"] = true,
+        ["Fossilized Raptor"] = true,
+        ["Winterspring Frostsaber"] = true,
+      }
+      for index = 1, _G.GetNumCompanions("MOUNT") do
+        local _, creatureName = _G.GetCompanionInfo("MOUNT", index)
+        if favoriteMounts[creatureName] then
+          _G.table.insert(favoriteMounts, index)
+        end
+      end
+      for k, _ in _G.pairs(favoriteMounts) do
+        if _G.type(k) == "string" then
+          favoriteMounts[k] = nil
+        end
+      end
+      _G.randomFavoriteMount = function()
+        if _G.IsMounted() then return end
+        -- IsFlyableArea() returns 1 for some areas in which flight is disabled
+        local _, _, wintergraspActive = _G.GetWorldPVPAreaInfo(1)
+        local canFly = _G.IsFlyableArea() and not (_G.GetZoneText() == "Wintergrasp" and wintergraspActive)
+        for i = 1, 42 do -- This isn't very smart. TODO: do something smart here.
+          local index = favoriteMounts[_G.math.random(#favoriteMounts)]
+          local _, _, _, _, _, mountFlags = _G.GetCompanionInfo("MOUNT", index)
+          if not canFly or _G.bit.band(mountFlags, 0x02) == 0x02 then
+            _G.CallCompanion("MOUNT", index)
+            break
+          end
+        end
+      end
+      self.button:RegisterForClicks("AnyDown")
+    end,
+    text =
       "/cancelaura Goblin Glider\n" ..
-      "/castsequence [@player] Mark of the Wild,Foo\n" ..
-      "/userandom [nomounted,flyable]Silver Covenant Hippogryph,Cenarion War Hippogryph\n" ..
-      "/userandom [nomounted,noflyable]Silver Covenant Hippogryph,Cenarion War Hippogryph,Swift Moonsaber," ..
-        "Fossilized Raptor,Winterspring Frostsaber\n" ..
+      "/castsequence [@player] Mark of the Wild,Foo\n" .. -- Resets on death.
+      "/run randomFavoriteMount()\n" ..
+      --"/userandom [nomounted,flyable]Silver Covenant Hippogryph,Cenarion War Hippogryph\n" ..
+      --"/userandom [nomounted,noflyable]Silver Covenant Hippogryph,Cenarion War Hippogryph,Swift Moonsaber," ..
+        --"Fossilized Raptor,Winterspring Frostsaber\n" ..
       "/use 15\n" ..
       "/dismount",
   },
@@ -459,9 +497,16 @@ local macros = {
         "[form:1]Swipe;[@focus,noform,mod:shift]Soothe;[@target,noform]Soothe",
   },
   { key = "ALT-G", text = "/focus arena4" },
-  { key = "H", text =
-    "/use [harm,nodead,nomod:shift][@focus,harm,nodead,mod:shift]Hibernate",
+  {
+    key = "H", text =
+      "/use [harm,nodead]Hibernate",
   },
+  --[[ Using a normal macro for this.
+  {
+    key = "SHIFT-H", text =
+      "/use [@focus,harm,nodead]Hibernate",
+  },
+  --]]
   { key = "ALT-H", text = "/focus arena5" },
   {
     key = "Z", specs = { [103] = true },
