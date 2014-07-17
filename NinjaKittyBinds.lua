@@ -69,11 +69,17 @@ local macros = {
     key = "ALT-3",
     init = function(self)
       self.button:SetAttribute("type", "macro")
+      --[[
       local favoriteMounts = {
-        ["Silver Covenant Hippogryph"] = true,
+        ["Black War Bear"] = true,
         ["Cenarion War Hippogryph"] = true,
-        ["Swift Moonsaber"] = true,
+        ["Flying Machine"] = true, -- How to check if we can't use this?
         ["Fossilized Raptor"] = true,
+        ["Quel'Dorei Steed"] = true,
+        ["Silver Covenant Hippogryph"] = true,
+        ["Swift Moonsaber"] = true,
+        ["Venomhide Ravasaur"] = true,
+        ["Vicious Warsaber"] = true,
         ["Winterspring Frostsaber"] = true,
       }
       for index = 1, _G.GetNumCompanions("MOUNT") do
@@ -89,29 +95,79 @@ local macros = {
       end
       _G.randomFavoriteMount = function()
         if _G.IsMounted() then return end
-        -- IsFlyableArea() returns 1 for some areas in which flight is disabled
+        -- IsFlyableArea() returns 1 for some areas in which flight is disabled, but returns nil if the player can't fly
+        -- in the area even tho flight is generally allowed.
         local _, _, wintergraspActive = _G.GetWorldPVPAreaInfo(1)
         local canFly = _G.IsFlyableArea() and not (_G.GetZoneText() == "Wintergrasp" and wintergraspActive)
         for i = 1, 42 do -- This isn't very smart. TODO: do something smart here.
           local index = favoriteMounts[_G.math.random(#favoriteMounts)]
           local _, _, _, _, _, mountFlags = _G.GetCompanionInfo("MOUNT", index)
           if not canFly or _G.bit.band(mountFlags, 0x02) == 0x02 then
-            _G.CallCompanion("MOUNT", index)
+            _G.CallCompanion("MOUNT", index) -- This can't cancel shapeshift forms. TODO: maybe we should go for "/use"
+                                             -- instead.
             break
           end
         end
       end
+      --]]
+      if _G.UnitName("player") == "Mornedhel" or _G.UnitName("player") == "Edhel" then
+        _G.SecureHandlerExecute(secureHeader, [[
+          favoriteMounts = table.new(
+            "Black War Bear",
+            "Cenarion War Hippogryph",
+            "Fossilized Raptor",
+            "Quel'Dorei Steed",
+            "Silver Covenant Hippogryph",
+            "Swift Moonsaber",
+            "Vicious Warsaber",
+            "Winterspring Frostsaber"
+          )
+          favoriteFlyingMounts = table.new(
+            "Cenarion War Hippogryph",
+            "Flying Machine",
+            "Silver Covenant Hippogryph"
+          )
+        ]])
+      elseif _G.UnitName("player") == "Mornurug" then
+        _G.SecureHandlerExecute(secureHeader, [[
+          favoriteMounts = table.new(
+            "Fossilized Raptor",
+            "Venomhide Ravasaur"
+          )
+          favoriteFlyingMounts = table.new(
+            "Armored Blue Wind Rider"
+          )
+        ]])
+      end
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
+        local mount
+        if IsFlyableArea() then
+          mount = favoriteMounts[math.random(#favoriteFlyingMounts)]
+        else
+          mount = favoriteMounts[math.random(#favoriteMounts)]
+        end
+        self:SetAttribute("*macrotext1",
+          "/cancelaura Goblin Glider\n" ..
+          "/castsequence [@player] Mark of the Wild,Foo\n" ..
+          "/use [nomounted]" .. mount .. "\n" ..
+          "/use 15\n" ..
+          "/dismount"
+        )
+      ]])
       self.button:RegisterForClicks("AnyDown")
     end,
+    --[[
     text =
       "/cancelaura Goblin Glider\n" ..
       "/castsequence [@player] Mark of the Wild,Foo\n" .. -- Resets on death.
+      "/cancelform\n" ..
       "/run randomFavoriteMount()\n" ..
       --"/userandom [nomounted,flyable]Silver Covenant Hippogryph,Cenarion War Hippogryph\n" ..
       --"/userandom [nomounted,noflyable]Silver Covenant Hippogryph,Cenarion War Hippogryph,Swift Moonsaber," ..
         --"Fossilized Raptor,Winterspring Frostsaber\n" ..
       "/use 15\n" ..
       "/dismount",
+    --]]
   },
   {
     key = "4", text =
