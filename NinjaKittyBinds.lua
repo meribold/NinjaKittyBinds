@@ -571,11 +571,13 @@ local macros = {
       self.button:SetAttribute("*macrotext1", -- Used when [harm].
         "/cancelform [form:5,flying]\n" ..
         "/use !Prowl\n" ..
+        "/use [nostealth]Shadowmeld\n" ..
         "/use [stealth]Pounce"
       )
       self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
         "/cancelform [form:5,flying]\n" ..
         "/use !Prowl\n" ..
+        "/use [nostealth]Shadowmeld\n" ..
         "/stopmacro [nostealth]\n" ..
         "/targetenemyplayer\n" ..
         "/stopmacro [noexists][noharm]\n" ..
