@@ -862,7 +862,7 @@ function handlerFrame:ADDON_LOADED()
   end
 
   -- http://wowpedia.org/Creating_a_slash_command
-  _G.SLASH_NINJAKITTYKEYBINDS1, SLASH_NINJAKITTYKEYBINDS2 = "/nkkb"
+  _G.SLASH_NINJAKITTYKEYBINDS1, SLASH_NINJAKITTYKEYBINDS2 = "/nkb"
   _G.SlashCmdList.NINJAKITTYKEYBINDS = function(message, editBox)
     if not _G.InCombatLockdown() and message == "bind" then
       bind()
