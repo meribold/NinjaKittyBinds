@@ -12,8 +12,10 @@ setfenv(1, NinjaKittyBinds)
 -- Healing Tide Totem, Capacitor Totem, Spirit Link Totem, ...
 
 -- I think "/use [@party1]Rejuvenation" while having a party1 but being far away causes Rejuvenation to wait for us
--- clicking a target. "/use [@party1,exists]Rejuvenation" is the same. "/use [@party1,help] Rejuvenation" doesn't do it.
--- This seems like a better fix than "/use 1".
+-- clicking a target (SpellIsTargeting()). "/use [@party1,exists]Rejuvenation" is the same. "/use [@party1,help]
+-- Rejuvenation" doesn't do it.
+-- This seems like a better fix than "/use 1"  which has the effect of the protected function SpellStopTargeting()
+-- (1 is INVSLOT_HEAD, see: http://wowpedia.org/InventorySlotId). "/use 0" doesn't work for this.
 
 local secureHeader = _G.CreateFrame("Frame", nil, _G.UIParent, "SecureHandlerBaseTemplate")
 
@@ -30,6 +32,7 @@ local macros = {
       self.button:SetAttribute("downbutton", "RightButton")
       self.button:SetAttribute("*macrotext1", "/use Stampeding Roar")
       self.button:SetAttribute("*macrotext2",
+        "/cancelaura Body and Soul\n" ..
         "/cancelaura Dash\n" ..
         "/use Stampeding Roar"
       )
@@ -46,6 +49,7 @@ local macros = {
       self.button:SetAttribute("downbutton", "RightButton")
       self.button:SetAttribute("*macrotext1", "/use Dash")
       self.button:SetAttribute("*macrotext2",
+        "/cancelaura Body and Soul\n" ..
         "/cancelaura Stampeding Roar\n" ..
         "/use Dash"
       )
@@ -149,17 +153,18 @@ local macros = {
         self:SetAttribute("*macrotext1",
           "/cancelaura Goblin Glider\n" ..
           "/castsequence [@player] Mark of the Wild,Foo\n" ..
+          "/use [nomounted,swimming]Abyssal Seahorse\n" ..
           "/use [nomounted]" .. mount .. "\n" ..
           "/use 15\n" ..
           "/dismount"
         )
-      ]])
+      ]]) -- /castsequence [@player] Mark of the Wild,Foo\n resets on death.
       self.button:RegisterForClicks("AnyDown")
     end,
     --[[
     text =
       "/cancelaura Goblin Glider\n" ..
-      "/castsequence [@player] Mark of the Wild,Foo\n" .. -- Resets on death.
+      "/castsequence [@player] Mark of the Wild,Foo\n" ..
       "/cancelform\n" ..
       "/run randomFavoriteMount()\n" ..
       --"/userandom [nomounted,flyable]Silver Covenant Hippogryph,Cenarion War Hippogryph\n" ..
@@ -169,7 +174,7 @@ local macros = {
       "/dismount",
     --]]
   },
-  {
+  { -- TODO: Fix all the ress macros.
     key = "4", text =
       "/use [@mouseover,help,dead]Rebirth;[@mouseover,help]Healing Touch;[help,dead]Rebirth;[help]Healing Touch;" ..
         "[@player]Healing Touch",
@@ -289,12 +294,13 @@ local macros = {
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1",
-        "/use Tiger's Fury\n" ..
+        "/use [form:3]Tiger's Fury\n" ..
         "/use [form:3]10\n" ..
         "/use [form:3]14\n" ..
         "/castsequence [form:3]reset=1 0,10\n" ..
         "/castsequence [form:3]reset=1 0,Berserk\n" ..
-        "/castsequence [form:3]reset=1 0,Berserking"
+        "/castsequence [form:3]reset=1 0,Berserking\n" ..
+        "/use [noform:3]Cat Form"
       )
       self.button:SetAttribute("*macrotext2", -- Used when we have Incarnation.
         "/use [form:3]Nature's Vigil\n" ..
@@ -302,7 +308,8 @@ local macros = {
         "/use [form:3]14\n" ..
         "/use [form:3]10\n" ..
         "/use [form:3]Berserk\n" ..
-        "/use [form:3]Berserking"
+        "/use [form:3]Berserking\n" ..
+        "/use [noform:3]Cat Form"
       )
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         local spellId = select(2, GetActionInfo(owner:GetAttribute("prowlActionSlot")))
@@ -342,18 +349,26 @@ local macros = {
     key = "SHIFT-E",
     init = function(self)
       self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("*macrotext1",
-        "/use [exists]Mangle"
+      self.button:SetAttribute("*macrotext1", -- Used when [harm].
+        "/use Mangle"
       )
-      self.button:SetAttribute("*macrotext2", -- Used when we have Incarnation.
-        "/use [harm]Pounce" -- Pounce auto-acquires a target when without a hostile target.
+      self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
+        "/targetenemyplayer\n" ..
+        "/stopmacro [noexists][noharm]\n" ..
+        "/use Mangle\n" ..
+        "/cleartarget"
+      )
+      self.button:SetAttribute("*macrotext3", -- Used when we have Incarnation.
+        "/use [harm]Pounce" -- Pounce would auto-acquire a target when without a hostile target.
       )
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         local spellId = select(2, GetActionInfo(owner:GetAttribute("prowlActionSlot")))
         if spellId == 5215 then
-          return
+          if not UnitExists("target") or not PlayerCanAttack("target") then
+            return "RightButton"
+          end
         elseif spellId == 102547 then
-          return "RightButton"
+          return "MiddleButton"
         else
           return false
         end
@@ -438,8 +453,8 @@ local macros = {
   { key = "ALT-ESCAPE" },
   {
     key = "A", text =
-      "/use [noform,swimming]Aquatic Form;[noform,flyable,nocombat,outdoors]Swift Flight Form;" ..
-        "[noform,outdoors]!Travel Form\n" ..
+      --"/use [noform,swimming]Aquatic Form;[noform,nomounted,flyable,nocombat,outdoors]Swift Flight Form;" ..
+        --"[noform,nomounted,outdoors]!Travel Form\n" .. -- That sucked.
       "/use [form:1]Frenzied Regeneration\n" ..
       "/cancelform [form]\n" ..
       "/dismount [mounted]\n" ..
@@ -508,7 +523,7 @@ local macros = {
   },
   { key = "SHIFT-D", text = "/use [@focus,harm]Skull Bash" },
   { key = "ALT-D", text = "/focus arena2" },
-  {
+  { -- TODO: Pounce when [stealth] or we have Incarnation.
     key = "F",
     init = function(self)
       self.button:SetAttribute("type", "macro")
@@ -527,7 +542,7 @@ local macros = {
         "/stopmacro [noform:3][@mouseover,harm]\n" ..
         "/targetenemyplayer\n" ..
         "/stopmacro [noexists][noharm]\n" ..
-        "/use [mod:shift,harm]Ravage;[harm]Mangle\n" ..
+        "/use [mod:shift,harm]Ravage;[stealth,harm]Pounce\n" ..
         "/cleartarget"
       )
       -- Our snippets get these arguments: self, button, down.  See
@@ -586,7 +601,8 @@ local macros = {
       )
       self.button:SetAttribute("*macrotext3", -- Used when we have Incarnation.
         "/cancelform [form:5,flying]\n" ..
-        "/use !Prowl"
+        "/use !Prowl\n" ..
+        "/use [stealth]Pounce"
       )
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         local spellId = select(2, GetActionInfo(owner:GetAttribute("prowlActionSlot")))
@@ -826,7 +842,6 @@ function handlerFrame:ADDON_LOADED()
   --secureHeader:SetAttribute("party2", db.party2)
 
   do
-    -- TODO: make it work for pet battles?
     local overrideBarStateHandler = _G.CreateFrame("Frame", nil, nil, "SecureHandlerStateTemplate")
 
     -- We don't use the first action bar as the possess bar because skills are put on it automatically while leveling.
@@ -835,23 +850,32 @@ function handlerFrame:ADDON_LOADED()
         for i, key in ipairs(table.new("A", "S", "D", "F", "G", "H")) do
           self:SetBindingClick(false, key, "BT4Button" .. (12 + i))
           --self:SetBindingClick(false, key, "OverrideActionBarButton" .. (12 + i))
-          --self:GetFrameRef(key .. "Button"):SetAttribute("macrotext", "/click BT4Button" .. (12 + i))
         end
-        self:SetBindingClick(false, "ESCAPE", "BT4Button85")
       elseif newstate == "nooverridebar" then
-        self:ClearBindings()
+        for _, key in ipairs(table.new("A", "S", "D", "F", "G", "H")) do
+          self:ClearBinding(key)
+        end
       end
     ]])
 
     _G.RegisterStateDriver(overrideBarStateHandler, "overridebar",
       "[overridebar][vehicleui][possessbar][bonusbar:5]overridebar;nooverridebar")
 
-    --[=[
+    overrideBarStateHandler:SetAttribute("_onstate-canexitvehicle", [[
+      if newstate == "canexitvehicle" then
+        self:SetBindingClick(false, "ESCAPE", "BT4Button85")
+      elseif newstate == "nocanexitvehicle" then
+        self:ClearBinding("ESCAPE")
+      end
+    ]])
+
+    _G.RegisterStateDriver(overrideBarStateHandler, "canexitvehicle",
+      "[canexitvehicle]canexitvehicle;nocanexitvehicle")
+
     overrideBarStateHandler:SetAttribute("_onstate-petbattle", [[
-      print(newstate)
       if newstate == "petbattle" then
         for i, key in ipairs(table.new("A", "S", "D", "F", "G", "H")) do
-          self:SetBindingClick(false, key, PetBattleFrame.BottomFrame.abilityButtons[i])
+          self:SetBindingClick(false, key, "NinjaKittyBindsPetBattle" .. key .. "Button")
         end
       elseif newstate == "nopetbattle" then
         self:ClearBindings()
@@ -860,8 +884,41 @@ function handlerFrame:ADDON_LOADED()
 
     _G.RegisterStateDriver(overrideBarStateHandler, "petbattle",
       "[petbattle]petbattle;nopetbattle")
-    ]=]
   end
+
+  do
+    local keys = { "A", "S", "D", "F", "G" }
+    _G.assert(#keys == _G.NUM_BATTLE_PET_HOTKEYS)
+
+    local buttons = {
+      _G.PetBattleFrame.BottomFrame.SwitchPetButton,
+      _G.PetBattleFrame.BottomFrame.CatchButton,
+    }
+
+    -- Only for abilities, not other action buttons.
+    _G.hooksecurefunc("PetBattleAbilityButton_OnLoad", function(self)
+      local key = keys[self:GetID()]
+      local proxyButton = _G.CreateFrame("Button", "NinjaKittyBindsPetBattle" .. key .. "Button", _G.UIParent,
+        "SecureActionButtonTemplate")
+      proxyButton:SetAttribute("type", "click")
+      proxyButton:SetAttribute("clickbutton", self)
+      proxyButton:RegisterForClicks("AnyDown")
+    end)
+
+    for _, button in _G.ipairs(buttons) do
+      local key = keys[button:GetID()]
+      local proxyButton = _G.CreateFrame("Button", "NinjaKittyBindsPetBattle" .. key .. "Button", _G.UIParent,
+        "SecureActionButtonTemplate")
+      proxyButton:SetAttribute("type", "click")
+      proxyButton:SetAttribute("clickbutton", button)
+      proxyButton:RegisterForClicks("AnyDown")
+    end
+
+    _G.hooksecurefunc("PetBattleAbilityButton_UpdateHotKey", function(self)
+      self.HotKey:SetText(keys[self:GetID()])
+      self.HotKey:Show()
+    end)
+  end -- http://wowprogramming.com/utils/xmlbrowser/live/AddOns/Blizzard_PetBattleUI/Blizzard_PetBattleUI.lua
 
   -- http://wowpedia.org/Creating_a_slash_command
   _G.SLASH_NINJAKITTYKEYBINDS1, SLASH_NINJAKITTYKEYBINDS2 = "/nkb"
