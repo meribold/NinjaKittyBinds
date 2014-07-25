@@ -60,7 +60,11 @@ local macros = {
   },
   { key = "SHIFT-1" },
   { key = "ALT-1" },
-  { key = "2", text = "/use Might of Ursoc" },
+  {
+    key = "2", text =
+    "/use Might of Ursoc\n" ..
+    "/castsequence reset=1 0,Healthstone",
+  },
   { key = "SHIFT-2", text = "/use Nature's Grasp" },
   {
     key = "ALT-2", text =
