@@ -33,6 +33,7 @@ local macros = {
       self.button:SetAttribute("*macrotext1", "/use Stampeding Roar")
       self.button:SetAttribute("*macrotext2",
         "/cancelaura Body and Soul\n" ..
+        "/cancelaura Angelic Feather\n" ..
         "/cancelaura Dash\n" ..
         "/use Stampeding Roar"
       )
@@ -50,6 +51,7 @@ local macros = {
       self.button:SetAttribute("*macrotext1", "/use Dash")
       self.button:SetAttribute("*macrotext2",
         "/cancelaura Body and Soul\n" ..
+        "/cancelaura Angelic Feather\n" ..
         "/cancelaura Stampeding Roar\n" ..
         "/use Dash"
       )
