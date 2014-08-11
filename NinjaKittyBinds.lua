@@ -127,6 +127,7 @@ local macros = {
             "Cenarion War Hippogryph",
             "Fossilized Raptor",
             "Quel'Dorei Steed",
+            "Red Primal Raptor",
             "Silver Covenant Hippogryph",
             "Swift Moonsaber",
             "Vicious Warsaber",
@@ -142,6 +143,7 @@ local macros = {
         _G.SecureHandlerExecute(secureHeader, [[
           favoriteMounts = table.new(
             "Fossilized Raptor",
+            "Red Primal Raptor",
             "Venomhide Ravasaur"
           )
           favoriteFlyingMounts = table.new(
@@ -149,6 +151,9 @@ local macros = {
           )
         ]])
       end
+      -- TODO: do something clever about error messages.
+      -- http://us.battle.net/wow/en/forum/topic/4253966114
+      -- http://eu.battle.net/wow/en/forum/topic/3313065586
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         local mount
         if IsFlyableArea() then
@@ -331,15 +336,34 @@ local macros = {
     end,
   },
   {
-    key = "SHIFT-W", specs = { [103] = true }, text =
-      "/use [form:1]Frenzied Regeneration\n" ..
-      "/use Incarnation\n" ..
-      "/use Nature's Vigil\n" ..
-      "/castsequence [form:3]reset=1 0,Tiger's Fury\n" ..
-      "/castsequence [form:3]reset=1 0,14\n" ..
-      "/castsequence [form:3]reset=1 0,10\n" ..
-      "/castsequence [form:3]reset=1 0,Berserk\n" ..
-      "/castsequence [form:3]reset=1 0,Berserking",
+    key = "SHIFT-W", specs = { [103] = true },
+    update = function(self)
+      -- http://wowpedia.org/API_GetTalentInfo
+      local name, _, _, _, selected, _ = _G.GetTalentInfo(11)
+      if selected or not name then -- We are specced into Incarnation or don't know.
+        _G.print("Incarnation.")
+        self.button:SetAttribute("*macrotext1",
+          "/use [form:1]Frenzied Regeneration\n" ..
+          "/use Incarnation\n" ..
+          "/use Nature's Vigil\n" ..
+          "/castsequence [form:3]reset=1 0,Tiger's Fury\n" ..
+          "/castsequence [form:3]reset=1 0,14\n" ..
+          "/castsequence [form:3]reset=1 0,10\n" ..
+          "/castsequence [form:3]reset=1 0,Berserk\n" ..
+          "/castsequence [form:3]reset=1 0,Berserking"
+        )
+      else
+        _G.print("No Incarnation.")
+        self.button:SetAttribute("*macrotext1",
+          "/use [form:3]Nature's Vigil\n" ..
+          "/castsequence [form:3]reset=1 0,Tiger's Fury\n" ..
+          "/castsequence [form:3]reset=1 0,14\n" ..
+          "/castsequence [form:3]reset=1 0,10\n" ..
+          "/castsequence [form:3]reset=1 0,Berserk\n" ..
+          "/castsequence [form:3]reset=1 0,Berserking"
+        )
+      end
+    end,
   },
   {
     key = "ALT-W", text =
@@ -351,37 +375,7 @@ local macros = {
       "/stopcasting\n" ..
       "/use Typhoon",
   },
-  {
-    key = "SHIFT-E",
-    init = function(self)
-      self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("*macrotext1", -- Used when [harm].
-        "/use Mangle"
-      )
-      self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
-        "/targetenemyplayer\n" ..
-        "/stopmacro [noexists][noharm]\n" ..
-        "/use Mangle\n" ..
-        "/cleartarget"
-      )
-      self.button:SetAttribute("*macrotext3", -- Used when we have Incarnation.
-        "/use [harm]Pounce" -- Pounce would auto-acquire a target when without a hostile target.
-      )
-      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
-        local spellId = select(2, GetActionInfo(owner:GetAttribute("prowlActionSlot")))
-        if spellId == 5215 then
-          if not UnitExists("target") or not PlayerCanAttack("target") then
-            return "RightButton"
-          end
-        elseif spellId == 102547 then
-          return "MiddleButton"
-        else
-          return false
-        end
-      ]])
-      self.button:RegisterForClicks("AnyDown")
-    end,
-  },
+  { key = "SHIFT-E", text = "/use Symbiosis" },
   { key = "ALT-E", text = "/use [@mouseover,help,nodead][@player]Mark of the Wild", },
   {
     key = "R", specs = { [103] = true }, text =
@@ -529,15 +523,13 @@ local macros = {
   },
   { key = "SHIFT-D", text = "/use [@focus,harm]Skull Bash" },
   { key = "ALT-D", text = "/focus arena2" },
-  { -- TODO: Pounce when [stealth] or we have Incarnation.
+  { -- TODO: Pounce when [stealth]?
     key = "F",
     init = function(self)
       self.button:SetAttribute("type", "macro")
-      --[[
       self.button:SetAttribute("*macrotext1", -- Used when [noform:3].
         "/use Cat Form"
       )
-      ]]
       self.button:SetAttribute("*macrotext2", -- Used when [harm].
         "/use [form:1]Frenzied Regeneration\n" ..
         "/use [noform:3]Cat Form;[@mouseover,harm]Mangle;[mod:shift]Ravage;Shred"
@@ -551,17 +543,27 @@ local macros = {
         "/use [mod:shift,harm]Ravage;[stealth,harm]Pounce\n" ..
         "/cleartarget"
       )
+      self.button:SetAttribute("*macrotext4", -- Used when we have Incarnation.
+        "/use [mod:shift,harm]Ravage;[harm]Pounce" -- Pounce auto-acquires a target when without a hostile target.
+      )
       -- Our snippets get these arguments: self, button, down.  See
       -- "http://wowprogramming.com/utils/xmlbrowser/live/FrameXML/SecureTemplates.lua" and "Iriel’s Field Guide to
       -- Secure Handlers".
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
-        --if GetBonusBarOffset() ~= 3 then
-          if UnitExists("target") and PlayerCanAttack("target") then
-            return "RightButton"
-          else
-            return "MiddleButton"
+        local spellId = select(2, GetActionInfo(owner:GetAttribute("prowlActionSlot")))
+        if spellId == 5215 then
+          if GetBonusBarOffset() == 1 then
+            if UnitExists("target") and PlayerCanAttack("target") then
+              return "RightButton"
+            else
+              return "MiddleButton"
+            end
           end
-        --end
+        elseif spellId == 102547 then
+          return "Button4"
+        else
+          return false
+        end
       ]])
       self.button:RegisterForClicks("AnyDown")
     end,
@@ -570,8 +572,8 @@ local macros = {
     "/focus arena3",
   },
   { key = "G", text =
-      "/use [form:3,mod:shift]Ferocious Bite;[form:3]Rip;[form:1,nomod:shift]Thrash;" ..
-        "[form:1]Swipe;[@focus,noform,mod:shift]Soothe;[@target,noform]Soothe",
+      "/use [form:3,mod:shift]Ferocious Bite;[form:3]Rip;[form:1,nomod:shift]Thrash;[form:1]Swipe;" ..
+        "[@focus,noform,mod:shift]Moonfire;[@target,noform]Moonfire",
   },
   { key = "ALT-G", text = "/focus arena4" },
   {
@@ -630,8 +632,27 @@ local macros = {
   { key = "X", text = "/use Survival Instincts" },
   { key = "SHIFT-X", text = "/use Barkskin" },
   {
-    key = "ALT-X", text =
-      "/use [@mouseover,help,nodead][help,nodead][@player]Innervate",
+    key = "ALT-X",
+    --[=[
+    init = function(self)
+      self.button:SetAttribute("type", "macro")
+      self.button:SetAttribute("*macrotext1", "/use [form:3]Force of Nature") -- Used when [@arena3,noexists].
+      self.button:SetAttribute("*macrotext2", "/use [@arena1,form:3]]Force of Nature") -- Used when [@arena3,exists].
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
+        if UnitExists("arena3") then
+          return "RightButton"
+        end
+      ]])
+      self.button:RegisterForClicks("AnyDown")
+    end,
+    ]=]
+    update = function(self)
+      if (_G.select(2, _G.GetInstanceInfo())) == "arena" and _G.GetNumGroupMembers() == 3 then
+        self.button:SetAttribute("*macrotext1", "/use [@arena1,form:3]]Force of Nature")
+      else
+        self.button:SetAttribute("*macrotext1", "/use [form:3]Force of Nature")
+      end
+    end,
   },
   {
     key = "C",
@@ -661,8 +682,49 @@ local macros = {
     end,
   },
   { key = "SHIFT-C", text = "/use Maim" }, -- Maim doesn't seem to auto-acquire a target.
-  { key = "ALT-C", text = "/use Force of Nature" },
-  { key = "V", text = "/use Symbiosis" },
+  {
+    key = "ALT-C",
+    update = function(self)
+      if (_G.select(2, _G.GetInstanceInfo())) == "arena" and _G.GetNumGroupMembers() == 3 then
+        self.button:SetAttribute("*macrotext1", "/use [@arena2,form:3]]Force of Nature")
+      else
+        self.button:SetAttribute("*macrotext1", "/use [@focus,form:3]Force of Nature")
+      end
+    end,
+  },
+  {
+    key = "V",
+    init = function(self)
+      self.button:SetAttribute("type", "macro")
+      self.button:SetAttribute("*macrotext1", -- Used when [harm].
+        "/use [noform:1/3]Cat Form;Mangle"
+      )
+      self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
+        "/use [noform:1/3]Cat Form\n" ..
+        "/stopmacro [noform:1/3]\n" ..
+        "/targetenemyplayer\n" ..
+        "/stopmacro [noexists][noharm]\n" ..
+        "/use Mangle\n" ..
+        "/cleartarget"
+      )
+      self.button:SetAttribute("*macrotext3", -- Used when we have Incarnation.
+        "/use [harm]Pounce" -- Pounce auto-acquires a target when without a hostile target.
+      )
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
+        --local spellId = select(2, GetActionInfo(owner:GetAttribute("prowlActionSlot")))
+        --if spellId == 5215 then
+          if not UnitExists("target") or not PlayerCanAttack("target") then
+            return "RightButton"
+          end
+        --elseif spellId == 102547 then
+          --return "MiddleButton"
+        --else
+          --return false
+        --end
+      ]])
+      self.button:RegisterForClicks("AnyDown")
+    end,
+  },
   {
     key = "SHIFT-V",
     init = function(self)
@@ -686,23 +748,70 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  { key = "ALT-V", text = "/use [@focus]Force of Nature" },
+  { key = "ALT-V", text = "/use [@arena3,form:3]Force of Nature" },
   { key = "B", text = "/use Entangling Roots" },
   { key = "SHIFT-B", text = "/use [@focus]Entangling Roots" },
-  { key = "ALT-B", text = "/use Moonfire" },
+  { key = "ALT-B", text = "/use [@mouseover,help,nodead][help,nodead][@player]Innervate", },
   {
     key = "N", text =
-      --"/use [form:3,mod:shift]Swipe;[form:3]Thrash;[form:1]Growl" .. '\n' ..
-      "/use [form:1/3,mod:shift]Swipe;[form:1/3]Thrash\n" ..
+      "/use [noform:1/3]Cat Form;[form:1/3,mod:shift]Swipe;[form:1/3]Thrash\n" ..
       "/startattack [harm,nodead,form:1/3]",
   },
-  { key = "ALT-N" }, -- FREE!
+  {
+    key = "ALT-N", text =
+      "/use Heart of the Wild\n" ..
+      "/use [@focus,help][@player]Cenarion Ward",
+  },
+  {
+    key = "MOUSEWHEELUP",
+    update = function(self)
+      if (_G.select(2, _G.GetInstanceInfo())) == "arena" and _G.GetNumGroupMembers() == 2 then
+        self.button:SetAttribute("*macrotext1",
+          "/tar [@mouseover,exists,nomod]\n" ..
+          "/targetenemy [mod:shift]\n" ..
+          --"/startattack [exists,combat,nostealth,mod:shift]\n" ..
+          "/tar [@arena1,nomod:shift]\n" ..
+          "/focus [@arena2,nomod:shift]"
+        )
+      else
+        self.button:SetAttribute("*macrotext1",
+          "/tar [@mouseover,exists]\n" ..
+          "/targetenemyplayer [@mouseover,noexists,nomod:shift]\n" ..
+          "/targetenemy [@mouseover,noexists,mod:shift]\n"-- ..
+          --"/focus [@focus,noexists] target\n" ..
+          --"/startattack [exists,combat,nostealth]"
+        )
+      end
+    end,
+  },
   {
     key = "ALT-MOUSEWHEELUP", text =
       "/targetexact Psyfiend\n" ..
       "/startattack [exists,harm]\n" ..
       "/use [exists,harm]Wild Charge\n" ..
       "/use [exists,harm]Mangle",
+  },
+  {
+    key = "MOUSEWHEELDOWN",
+    update = function(self)
+      if (_G.select(2, _G.GetInstanceInfo())) == "arena" and _G.GetNumGroupMembers() == 2 then
+        self.button:SetAttribute("*macrotext1",
+          "/focus [@mouseover,exists,nomod]\n" ..
+          "/targetenemy [mod:shift] 1\n" ..
+          --"/startattack [exists,combat,nostealth,mod:shift]\n" ..
+          "/tar [@arena2,nomod:shift]\n" ..
+          "/focus [@arena1,nomod:shift]"
+        )
+      else
+        self.button:SetAttribute("*macrotext1",
+          "/focus [@mouseover,exists]\n" ..
+          "/targetenemyplayer [@mouseover,noexists,nomod:shift] 1\n" ..
+          "/targetenemy [@mouseover,noexists,mod:shift] 1\n"-- ..
+          --"/focus [@focus,noexists] target\n" ..
+          --"/startattack [exists,combat,nostealth]"
+        )
+      end
+    end,
   },
   {
     key = "ALT-MOUSEWHEELDOWN", text =
@@ -767,10 +876,10 @@ local macros = {
     end,
   },
   { key = "SHIFT-BUTTON4", text = "/focus" },
-  { key = "ALT-BUTTON4" }, -- FREE!
+  { key = "ALT-BUTTON4", text = "/focus party1" },
   { key = "BUTTON5", text = "/targetfriendplayer" },
   { key = "SHIFT-BUTTON5", text = "/targetfriend" },
-  { key = "ALT-BUTTON5" }, -- FREE!
+  { key = "ALT-BUTTON5", text = "/focus party2" },
 }
 -- < / MACROS > --------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
@@ -851,6 +960,7 @@ function handlerFrame:ADDON_LOADED()
     local overrideBarStateHandler = _G.CreateFrame("Frame", nil, nil, "SecureHandlerStateTemplate")
 
     -- We don't use the first action bar as the possess bar because skills are put on it automatically while leveling.
+    -- TODO: display binding labels.
     overrideBarStateHandler:SetAttribute("_onstate-overridebar", [[
       if newstate == "overridebar" then
         for i, key in ipairs(table.new("A", "S", "D", "F", "G", "H")) do
@@ -999,21 +1109,26 @@ function handlerFrame:PLAYER_LOGIN()
 end
 
 function handlerFrame:PLAYER_ENTERING_WORLD()
-  -- ...
+  _G.assert(not _G.InCombatLockdown())
+  update()
 end
 
 function handlerFrame:SPELLS_CHANGED(...)
   _G.print("SPELLS_CHANGED", ...)
 end
 
-function handlerFrame:PLAYER_SPECIALIZATION_CHANGED(...)
-  _G.print("PLAYER_SPECIALIZATION_CHANGED", ...)
+-- This event seems to be posted when gaining a level, in which case we may be in combat. TODO: what to do?
+-- http://wowprogramming.com/docs/events/PLAYER_SPECIALIZATION_CHANGED
+function handlerFrame:PLAYER_SPECIALIZATION_CHANGED(unit)
+  _G.assert(unit == "player")
+  _G.assert(not _G.InCombatLockdown())
+  update()
 end
 
 handlerFrame:RegisterEvent("ADDON_LOADED")
 handlerFrame:RegisterEvent("PLAYER_LOGIN")
---handlerFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+handlerFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 --handlerFrame:RegisterEvent("SPELLS_CHANGED")
---handlerFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+handlerFrame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
 
 -- vim: tw=120 sw=2 et
