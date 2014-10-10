@@ -17,6 +17,8 @@ setfenv(1, NinjaKittyBinds)
 -- This seems like a better fix than "/use 1"  which has the effect of the protected function SpellStopTargeting()
 -- (1 is INVSLOT_HEAD, see: http://wowpedia.org/InventorySlotId). "/use 0" doesn't work for this.
 
+-- The way a lot of binds auto-acquire targets currently can often clear combo points or break CC. TODO: what to do?
+
 local secureHeader = _G.CreateFrame("Frame", nil, _G.UIParent, "SecureHandlerBaseTemplate")
 
 ---- < MACROS > --------------------------------------------------------------------------------------------------------
@@ -120,7 +122,7 @@ local macros = {
         end
       end
       --]]
-      if _G.UnitName("player") == "Mornedhel" or _G.UnitName("player") == "Edhel" then
+      if _G.UnitName("player") == "Mornedhel" or _G.UnitName("player") == "Mornwen" then
         _G.SecureHandlerExecute(secureHeader, [[
           favoriteMounts = table.new(
             "Black War Bear",
@@ -188,7 +190,7 @@ local macros = {
       "/dismount",
     --]]
   },
-  { -- TODO: Fix all the ress macros.
+  { -- TODO: Fix all the ress macros. [dead] seems to correspond to UnitIsDeadOrGhost().
     key = "4", text =
       "/use [@mouseover,help,dead]Rebirth;[@mouseover,help]Healing Touch;[help,dead]Rebirth;[help]Healing Touch;" ..
         "[@player]Healing Touch",
@@ -306,7 +308,7 @@ local macros = {
     key = "W", specs = { [103] = true },
     init = function(self)
       self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("*macrotext1",
+      self.button:SetAttribute("*macrotext1", -- Used when Incarnation isn't active (Prowl's spell ID is 5215).
         "/use [form:3]Tiger's Fury\n" ..
         "/use [form:3]10\n" ..
         "/use [form:3]14\n" ..
@@ -315,13 +317,14 @@ local macros = {
         "/castsequence [form:3]reset=1 0,Berserking\n" ..
         "/use [noform:3]Cat Form"
       )
-      self.button:SetAttribute("*macrotext2", -- Used when we have Incarnation.
+      self.button:SetAttribute("*macrotext2", -- Used when Incarnation is active (Prowl's spell ID is 102547).
         "/use [form:3]Nature's Vigil\n" ..
         "/use [form:3]Tiger's Fury\n" ..
         "/use [form:3]14\n" ..
         "/use [form:3]10\n" ..
         "/use [form:3]Berserk\n" ..
         "/use [form:3]Berserking\n" ..
+        "/use [form:3]Ravage\n" ..
         "/use [noform:3]Cat Form"
       )
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
@@ -341,21 +344,34 @@ local macros = {
     key = "SHIFT-W", specs = { [103] = true },
     update = function(self)
       -- http://wowpedia.org/API_GetTalentInfo
-      local name, _, _, _, selected, _ = _G.GetTalentInfo(11)
+      local name, _, _, _, selected = _G.GetTalentInfo(11)
+      local _, _, _, _, treantsSelected = _G.GetTalentInfo(12)
       if selected or not name then -- We are specced into Incarnation or don't know.
-        _G.print("Incarnation.")
+        _G.print("Level 60 talent tier: Incarnation.")
         self.button:SetAttribute("*macrotext1",
-          "/use [form:1]Frenzied Regeneration\n" ..
-          "/use Incarnation\n" ..
+          --"/use [form:1]Frenzied Regeneration\n" ..
+          --"/use Incarnation\n" ..  -- Can't use Ravage if we have this line b/c it's both on the GCD.
           "/use Nature's Vigil\n" ..
           "/castsequence [form:3]reset=1 0,Tiger's Fury\n" ..
           "/castsequence [form:3]reset=1 0,14\n" ..
           "/castsequence [form:3]reset=1 0,10\n" ..
           "/castsequence [form:3]reset=1 0,Berserk\n" ..
-          "/castsequence [form:3]reset=1 0,Berserking"
+          "/castsequence [form:3]reset=1 0,Berserking\n" ..
+          "/castsequence reset=30 Incarnation: King of the Jungle,Foo\n" .. -- We need the long skill name.
+          "/castsequence [form:3]reset=1 0,Ravage,Ravage,Ravage"
+        )
+      elseif treantsSelected then
+        -- Treants aren't affected by: Savage Roar, Tiger's Fury, Nature's Vigil, Berserking (maybe haste in general?).
+        -- They are affected by bonuses to agility.
+        --_G.print("Level 60 talent tier: Treants.")
+        self.button:SetAttribute("*macrotext1",
+          "/use [noform:3]Cat Form\n" ..
+          "/use [form:3]14\n" ..
+          "/use [form:3]10\n" ..
+          "/use [form:3]Force of Nature"
         )
       else
-        _G.print("No Incarnation.")
+        --_G.print("Level 60 talent tier: nothing.")
         self.button:SetAttribute("*macrotext1",
           "/use [form:3]Nature's Vigil\n" ..
           "/castsequence [form:3]reset=1 0,Tiger's Fury\n" ..
@@ -409,7 +425,7 @@ local macros = {
         "/use Faerie Fire"
       )
       self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
-        "/targetenemyplayer\n" ..
+        "/targetenemyplayer [stealth]\n" ..
         "/stopmacro [noexists][noharm]\n" ..
         "/use Faerie Fire\n" ..
         "/cleartarget"
@@ -523,7 +539,7 @@ local macros = {
         "/stopmacro [@" .. db.party2 .. ",help,noform]\n" ..
         "/use [@mouseover,harm,form:1/3]Skull Bash\n" ..
         "/stopmacro [@mouseover,harm,form:1/3]\n" ..
-        "/targetenemyplayer\n" ..
+        "/targetenemyplayer [stealth]\n" ..
         "/stopmacro [noexists][noharm]\n" ..
         "/use [form:1/3]Skull Bash\n" ..
         "/cleartarget"
@@ -547,7 +563,7 @@ local macros = {
         "/use [form:1]Frenzied Regeneration\n" ..
         "/use [noform:3]Cat Form;[@mouseover,harm]Mangle\n" ..
         "/stopmacro [noform:3][@mouseover,harm]\n" ..
-        "/targetenemyplayer\n" ..
+        "/targetenemyplayer [stealth]\n" ..
         "/stopmacro [noexists][noharm]\n" ..
         "/use [mod:shift,harm]Ravage;[stealth,harm]Pounce\n" ..
         "/cleartarget"
@@ -611,7 +627,7 @@ local macros = {
         "/use !Prowl\n" ..
         "/use [nostealth]Shadowmeld\n" ..
         "/stopmacro [nostealth]\n" ..
-        "/targetenemyplayer\n" ..
+        "/targetenemyplayer [stealth]\n" ..
         "/stopmacro [noexists][noharm]\n" ..
         "/use Pounce\n" ..
         "/cleartarget"
@@ -658,12 +674,12 @@ local macros = {
     end,
     ]=]
     update = function(self)
-      local name, _, _, _, selected, _ = _G.GetTalentInfo(12)
+      local name, _, _, _, selected = _G.GetTalentInfo(12)
       if selected or not name then -- We are specced into Force of Nature or don't know.
         if (_G.select(2, _G.GetInstanceInfo())) == "arena" and _G.GetNumGroupMembers() == 3 then
-          self.button:SetAttribute("*macrotext1", "/use [@arena1,form:3]]Force of Nature")
+          self.button:SetAttribute("*macrotext1", "/use [@arena1]Skull Bash")
         else
-          self.button:SetAttribute("*macrotext1", "/use [form:3]Force of Nature")
+          self.button:SetAttribute("*macrotext1", "/use [@arena1]Skull Bash")
         end
       else
         self.button:SetAttribute("*macrotext1", "/use [@arena1]Skull Bash")
@@ -684,7 +700,7 @@ local macros = {
         "/use Ursol's Vortex\n" ..
         "/use [@mouseover,harm]Mighty Bash\n" ..
         "/stopmacro [@mouseover,harm]\n" ..
-        "/targetenemyplayer\n" ..
+        "/targetenemyplayer [stealth]\n" ..
         "/stopmacro [noexists][noharm]\n" ..
         "/use Mighty Bash\n" ..
         "/cleartarget"
@@ -701,12 +717,12 @@ local macros = {
   {
     key = "ALT-C",
     update = function(self)
-      local name, _, _, _, selected, _ = _G.GetTalentInfo(12)
+      local name, _, _, _, selected = _G.GetTalentInfo(12)
       if selected or not name then -- We are specced into Force of Nature or don't know.
         if (_G.select(2, _G.GetInstanceInfo())) == "arena" and _G.GetNumGroupMembers() == 3 then
-          self.button:SetAttribute("*macrotext1", "/use [@arena2,form:3]]Force of Nature")
+          self.button:SetAttribute("*macrotext1", "/use [@arena2]Skull Bash")
         else
-          self.button:SetAttribute("*macrotext1", "/use [@focus,form:3]Force of Nature")
+          self.button:SetAttribute("*macrotext1", "/use [@arena2]Skull Bash")
         end
       else
         self.button:SetAttribute("*macrotext1", "/use [@arena2]Skull Bash")
@@ -723,7 +739,7 @@ local macros = {
       self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
         "/use [noform:1/3]Cat Form\n" ..
         "/stopmacro [noform:1/3]\n" ..
-        "/targetenemyplayer\n" ..
+        "/targetenemyplayer [stealth]\n" ..
         "/stopmacro [noexists][noharm]\n" ..
         "/use Mangle\n" ..
         "/cleartarget"
@@ -746,7 +762,7 @@ local macros = {
       self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
         "/use [@mouseover,harm]Rake\n" ..
         "/stopmacro [@mouseover,harm]\n" ..
-        "/targetenemyplayer\n" ..
+        "/targetenemyplayer [stealth]\n" ..
         "/stopmacro [noexists][noharm]\n" ..
         "/use Rake\n" ..
         "/cleartarget"
@@ -762,9 +778,9 @@ local macros = {
   {
     key = "ALT-V",
     update = function(self)
-      local name, _, _, _, selected, _ = _G.GetTalentInfo(12)
+      local name, _, _, _, selected = _G.GetTalentInfo(12)
       if selected or not name then -- We are specced into Force of Nature or don't know.
-        self.button:SetAttribute("*macrotext1", "/use [@arena3,form:3]]Force of Nature")
+        self.button:SetAttribute("*macrotext1", "/use [@arena3]Skull Bash")
       else
         self.button:SetAttribute("*macrotext1", "/use [@arena3]Skull Bash")
       end
