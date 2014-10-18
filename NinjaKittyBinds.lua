@@ -17,61 +17,32 @@ setfenv(1, NinjaKittyBinds)
 -- This seems like a better fix than "/use 1"  which has the effect of the protected function SpellStopTargeting()
 -- (1 is INVSLOT_HEAD, see: http://wowpedia.org/InventorySlotId). "/use 0" doesn't work for this.
 
--- The way a lot of binds auto-acquire targets currently can often clear combo points or break CC. TODO: what to do?
+-- Add /mountspeical to Savage Roar macros? This animation is now played by default when using Savage Roar.
+
+-- Form numbers as of Patch 6.0.2.
+-- 0: No Form
+-- 1: Bear Form
+-- 2: Cat Form
+-- 3: Travel Form
 
 local secureHeader = _G.CreateFrame("Frame", nil, _G.UIParent, "SecureHandlerBaseTemplate")
 
 ---- < MACROS > --------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 
--- Used to have "/cancelaura [form:3]Incarnation: King of the Jungle".
+-- Used to have "/cancelaura [form:2]Incarnation: King of the Jungle".
 
 local macros = {
-  {
-    key = "`",
-    init = function(self)
-      self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("downbutton", "RightButton")
-      self.button:SetAttribute("*macrotext1", "/use Stampeding Roar")
-      self.button:SetAttribute("*macrotext2",
-        "/cancelaura Body and Soul\n" ..
-        "/cancelaura Angelic Feather\n" ..
-        "/cancelaura Dash\n" ..
-        "/use Stampeding Roar"
-      )
-      self.button:RegisterForClicks("AnyDown", "AnyUp")
-      --_G.SetMouselookOverrideBinding(self.key, "CLICK " .. self.button:GetName() .. ":MiddleButton")
-    end,
-  },
+  { key = "`", text = "/use Stampeding Roar" },
   { key = "SHIFT-`" },
   { key = "ALT-`" },
-  {
-    key = "1",
-    init = function(self)
-      self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("downbutton", "RightButton")
-      self.button:SetAttribute("*macrotext1", "/use Dash")
-      self.button:SetAttribute("*macrotext2",
-        "/cancelaura Body and Soul\n" ..
-        "/cancelaura Angelic Feather\n" ..
-        "/cancelaura Stampeding Roar\n" ..
-        "/use Dash"
-      )
-      self.button:RegisterForClicks("AnyDown", "AnyUp")
-    end,
-  },
+  { key = "1", text = "/use Dash" },
   { key = "SHIFT-1" },
   { key = "ALT-1" },
-  {
-    key = "2", text =
-    "/use Might of Ursoc\n" ..
-    "/castsequence reset=1 0,Healthstone",
-  },
-  { key = "SHIFT-2", text = "/use Nature's Grasp" },
+  { key = "2", text = "/use Healthstone" },
+  { key = "SHIFT-2", text = "" }, -- FREE!
   {
     key = "ALT-2", text =
-      "/cancelaura Dispersion\n" ..
-      "/cancelaura Divine Shield\n" ..
       "/cancelaura Hand of Protection\n" ..
       "/cancelaura Prowl",
   },
@@ -283,12 +254,14 @@ local macros = {
       self.button:SetAttribute("downbutton", "LeftButton")
       self.button:SetAttribute("*macrotext1",
         "/cancelaura Prowl\n" .. -- When we want to Shadowmeld, we want to Shadowmeld! We don't want to be told that
-        "/use Shadowmeld\n" ..   -- "a more powerful spell is already active".
-        "/use !Prowl"
+        "/use Shadowmeld"        -- "a more powerful spell is already active".
+        --"/use !Prowl"
       )
+      --[[
       self.button:SetAttribute("*macrotext2",
         "/use !Prowl"
       )
+      ]]
       self.button:RegisterForClicks("AnyDown", "AnyUp")
     end,
     bind = function(self)
@@ -297,9 +270,7 @@ local macros = {
   },
   { key = "SHIFT-TAB" },
   { key = "ALT-TAB" },
-  { key = "Q", text =
-    "/use [noform:5]13",
-  },
+  { key = "Q", text = "/use 13" },
   { key = "SHIFT-Q", text =
     "/use [@arena1]Cyclone",
   },
@@ -309,23 +280,18 @@ local macros = {
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when Incarnation isn't active (Prowl's spell ID is 5215).
-        "/use [form:3]Tiger's Fury\n" ..
-        "/use [form:3]10\n" ..
-        "/use [form:3]14\n" ..
-        "/castsequence [form:3]reset=1 0,10\n" ..
-        "/castsequence [form:3]reset=1 0,Berserk\n" ..
-        "/castsequence [form:3]reset=1 0,Berserking\n" ..
-        "/use [noform:3]Cat Form"
+        "/use Tiger's Fury\n" .. -- Tiger's Fury activates Cat Form.
+        "/use 14\n" ..
+        "/castsequence reset=1 0,Berserk\n" ..
+        "/castsequence reset=1 0,Berserking"
       )
       self.button:SetAttribute("*macrotext2", -- Used when Incarnation is active (Prowl's spell ID is 102547).
-        "/use [form:3]Nature's Vigil\n" ..
-        "/use [form:3]Tiger's Fury\n" ..
-        "/use [form:3]14\n" ..
-        "/use [form:3]10\n" ..
-        "/use [form:3]Berserk\n" ..
-        "/use [form:3]Berserking\n" ..
-        "/use [form:3]Ravage\n" ..
-        "/use [noform:3]Cat Form"
+        "/use Nature's Vigil\n" ..
+        "/use Tiger's Fury\n" ..
+        "/use 14\n" ..
+        "/use Berserk\n" ..
+        "/use Berserking\n" ..
+        "/use Shred"
       )
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         local spellId = select(2, GetActionInfo(owner:GetAttribute("prowlActionSlot")))
@@ -343,59 +309,54 @@ local macros = {
   {
     key = "SHIFT-W", specs = { [103] = true },
     update = function(self)
-      -- http://wowpedia.org/API_GetTalentInfo
-      local name, _, _, _, selected = _G.GetTalentInfo(11)
-      local _, _, _, _, treantsSelected = _G.GetTalentInfo(12)
-      if selected or not name then -- We are specced into Incarnation or don't know.
-        _G.print("Level 60 talent tier: Incarnation.")
+      local _, _, _, _, incarnationSelected = _G.GetTalentInfo(4, 2, _G.GetActiveSpecGroup())
+      local _, _, _, _, treantsSelected = _G.GetTalentInfo(4, 3, _G.GetActiveSpecGroup())
+      if incarnationSelected then -- We are specced into Incarnation.
+        --[[
         self.button:SetAttribute("*macrotext1",
           --"/use [form:1]Frenzied Regeneration\n" ..
-          --"/use Incarnation\n" ..  -- Can't use Ravage if we have this line b/c it's both on the GCD.
+          --"/use Incarnation: King of the Jungle\n" .. -- Can't use Shred if we have this line b/c it's both on the GCD.
           "/use Nature's Vigil\n" ..
-          "/castsequence [form:3]reset=1 0,Tiger's Fury\n" ..
-          "/castsequence [form:3]reset=1 0,14\n" ..
-          "/castsequence [form:3]reset=1 0,10\n" ..
-          "/castsequence [form:3]reset=1 0,Berserk\n" ..
-          "/castsequence [form:3]reset=1 0,Berserking\n" ..
+          "/castsequence [form:2]reset=1 0,Tiger's Fury\n" ..
+          "/castsequence [form:2]reset=1 0,14\n" ..
+          "/castsequence [form:2]reset=1 0,Berserk\n" ..
+          "/castsequence [form:2]reset=1 0,Berserking\n" ..
           "/castsequence reset=30 Incarnation: King of the Jungle,Foo\n" .. -- We need the long skill name.
-          "/castsequence [form:3]reset=1 0,Ravage,Ravage,Ravage"
+          "/castsequence [form:2]reset=1 0,Shred"
+        )
+        ]]
+        self.button:SetAttribute("*macrotext1",
+          --"/cancelaura Incarnation: King of the Jungle\n" ..
+          "/use Incarnation: King of the Jungle\n" ..
+          --"/castsequence reset=30 Incarnation: King of the Jungle,Shred\n" ..
+          "/use Nature's Vigil"
         )
       elseif treantsSelected then
         -- Treants aren't affected by: Savage Roar, Tiger's Fury, Nature's Vigil, Berserking (maybe haste in general?).
         -- They are affected by bonuses to agility.
-        --_G.print("Level 60 talent tier: Treants.")
         self.button:SetAttribute("*macrotext1",
-          "/use [noform:3]Cat Form\n" ..
-          "/use [form:3]14\n" ..
-          "/use [form:3]10\n" ..
-          "/use [form:3]Force of Nature"
+          "/use [noform:2]Cat Form\n" ..
+          "/use [form:2]14\n" ..
+          "/use [form:2]Force of Nature"
         )
-      else
-        --_G.print("Level 60 talent tier: nothing.")
+      else -- We are specced into Soul of the Forest or haven't selected a level 60 talent.
         self.button:SetAttribute("*macrotext1",
-          "/use [form:3]Nature's Vigil\n" ..
-          "/castsequence [form:3]reset=1 0,Tiger's Fury\n" ..
-          "/castsequence [form:3]reset=1 0,14\n" ..
-          "/castsequence [form:3]reset=1 0,10\n" ..
-          "/castsequence [form:3]reset=1 0,Berserk\n" ..
-          "/castsequence [form:3]reset=1 0,Berserking"
+          "/use Nature's Vigil\n" ..
+          "/castsequence reset=1 0,Tiger's Fury\n" ..
+          "/castsequence reset=1 0,14\n" ..
+          "/castsequence reset=1 0,Berserk\n" ..
+          "/castsequence reset=1 0,Berserking"
         )
       end
     end,
   },
-  {
-    key = "ALT-W", text =
-      "/use [help][@player]Cenarion Ward",
-  },
+  { key = "ALT-W", text = "" }, -- FREE!
   {
     key = "E", text =
       "/stopcasting\n" ..
       "/use Typhoon",
   },
-  {
-    key = "SHIFT-E", text =
-      "/use Symbiosis"
-  },
+  { key = "SHIFT-E", text = "" }, -- FREE!
   {
     key = "ALT-E", text =
       "/use [@mouseover,help,nodead][@player]Mark of the Wild",
@@ -403,7 +364,7 @@ local macros = {
   {
     key = "R", specs = { [103] = true }, text =
       "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [noform:3]Cat Form;Savage Roar",
+      "/use [noform:2]Cat Form;Savage Roar",
   },
   {
     key = "SHIFT-R", text =
@@ -469,15 +430,12 @@ local macros = {
   {
     key = "ESCAPE", text =
       "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [form:1]!Bear Form;[form:3]!Cat Form;[swimming]!Aquatic Form;[form:5][flyable,nocombat,outdoors]" ..
-        "!Swift Flight Form;[outdoors]!Travel Form;!Cat Form",
+      "/use [form:1]!Bear Form;[form:2]!Cat Form;[form:3][swimming][outdoors]!Travel Form;!Cat Form",
   },
   { key = "SHIFT-ESCAPE" },
   { key = "ALT-ESCAPE" },
   {
     key = "A", text =
-      --"/use [noform,swimming]Aquatic Form;[noform,nomounted,flyable,nocombat,outdoors]Swift Flight Form;" ..
-        --"[noform,nomounted,outdoors]!Travel Form\n" .. -- That sucked.
       "/use [form:1]Frenzied Regeneration\n" ..
       "/cancelform [form]\n" ..
       "/dismount [mounted]\n" ..
@@ -492,7 +450,7 @@ local macros = {
     key = "S", text =
       "/stopcasting\n" ..
       "/use Displacer Beast\n" ..
-      "/use [form:2/4][@mouseover,help,noform][@mouseover,harm,form:1/3][help,noform][harm,form:1/3][@party1,noform]" ..
+      "/use [form:3][@mouseover,help,noform][@mouseover,harm,form:1/2][help,noform][harm,form:1/2][@party1,noform]" ..
         "Wild Charge\n" ..
       "/use [@party1,noform]1",
   },
@@ -503,7 +461,7 @@ local macros = {
       self.button:SetAttribute("*macrotext1",
         "/stopcasting\n" ..
         "/use Displacer Beast\n" ..
-        "/use [form:2/4][@mouseover,help,noform][@mouseover,harm,form:1/3][help,noform][harm,form:1/3][@" .. db.party1
+        "/use [form:3][@mouseover,help,noform][@mouseover,harm,form:1/2][help,noform][harm,form:1/2][@" .. db.party1
           .. ",help,noform]Wild Charge"
       )
     end,
@@ -511,7 +469,7 @@ local macros = {
   {
     key = "SHIFT-S", text =
       "/stopcasting\n" ..
-      "/use [@focus,noform:2/4]Wild Charge",
+      "/use [@focus,noform:3]Wild Charge",
   },
   { key = "ALT-S", text = "/focus arena1" },
   {
@@ -530,46 +488,47 @@ local macros = {
         "/stopcasting\n" ..
         "/use [@" .. db.party2 .. ",help,noform]Wild Charge\n" ..
         --"/use [@" .. db.party2 .. ",help,noform]1\n" ..
-        "/use [@mouseover,harm,form:1/3][harm,form:1/3]Skull Bash"
+        "/use [@mouseover,harm,form:1/2][harm,form:1/2]Skull Bash"
       )
       self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
         "/stopcasting\n" ..
         "/use [@" .. db.party2 .. ",help,noform]Wild Charge\n" ..
         --"/use [@" .. db.party2 .. ",help,noform]1\n" ..
         "/stopmacro [@" .. db.party2 .. ",help,noform]\n" ..
-        "/use [@mouseover,harm,form:1/3]Skull Bash\n" ..
-        "/stopmacro [@mouseover,harm,form:1/3]\n" ..
+        "/use [@mouseover,harm,form:1/2]Skull Bash\n" ..
+        "/stopmacro [@mouseover,harm,form:1/2]\n" ..
         "/targetenemyplayer [stealth]\n" ..
         "/stopmacro [noexists][noharm]\n" ..
-        "/use [form:1/3]Skull Bash\n" ..
+        "/use [form:1/2]Skull Bash\n" ..
         "/cleartarget"
       )
     end,
   },
   { key = "SHIFT-D", text = "/use [@focus,harm]Skull Bash" },
   { key = "ALT-D", text = "/focus arena2" },
-  { -- TODO: Pounce when [stealth]?
+  {
     key = "F",
     init = function(self)
       self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("*macrotext1", -- Used when [noform:3].
+      self.button:SetAttribute("*macrotext1", -- Used when [noform:2].
         "/use Cat Form"
       )
       self.button:SetAttribute("*macrotext2", -- Used when [harm].
         "/use [form:1]Frenzied Regeneration\n" ..
-        "/use [noform:3]Cat Form;[@mouseover,harm]Mangle;[mod:shift]Ravage;Shred"
+        "/use [noform:2]Cat Form;[@mouseover,harm][]Shred\n" ..
+        "/stopattack [stealth]"
       )
       self.button:SetAttribute("*macrotext3", -- Used when [noexists][noharm].
         "/use [form:1]Frenzied Regeneration\n" ..
-        "/use [noform:3]Cat Form;[@mouseover,harm]Mangle\n" ..
-        "/stopmacro [noform:3][@mouseover,harm]\n" ..
+        "/use [noform:2]Cat Form;[@mouseover,harm]Shred\n" ..
+        "/stopmacro [noform:2][@mouseover,harm]\n" ..
         "/targetenemyplayer [stealth]\n" ..
         "/stopmacro [noexists][noharm]\n" ..
-        "/use [mod:shift,harm]Ravage;[stealth,harm]Pounce\n" ..
+        "/use [harm]Shred\n" ..
         "/cleartarget"
       )
       self.button:SetAttribute("*macrotext4", -- Used when we have Incarnation.
-        "/use [mod:shift,harm]Ravage;[harm]Pounce" -- Pounce auto-acquires a target when without a hostile target.
+        "/use [harm]Shred" -- Shred auto-acquires a target when without a hostile target.
       )
       -- Our snippets get these arguments: self, button, down.  See
       -- "http://wowprogramming.com/utils/xmlbrowser/live/FrameXML/SecureTemplates.lua" and "Iriel’s Field Guide to
@@ -593,11 +552,12 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
+  { key = "SHIFT-F", text = "" }, -- FREE!
   { key = "ALT-F", text =
     "/focus arena3",
   },
   { key = "G", text =
-      "/use [form:3,mod:shift]Ferocious Bite;[form:3]Rip;[form:1,nomod:shift]Thrash;[form:1]Swipe;" ..
+      "/use [form:2,mod:shift]Ferocious Bite;[form:2]Rip;[form:1,nomod:shift]Thrash;[form:1]Swipe;" ..
         "[@focus,noform,mod:shift]Moonfire;[@target,noform]Moonfire",
   },
   { key = "ALT-G", text = "/focus arena4" },
@@ -617,25 +577,18 @@ local macros = {
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [harm].
-        "/cancelform [form:5,flying]\n" ..
+        "/cancelform [form:3,flying]\n" ..
         "/use !Prowl\n" ..
-        "/use [nostealth]Shadowmeld\n" ..
-        "/use [stealth]Pounce"
+        "/use [nostealth]Shadowmeld"
       )
       self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
-        "/cancelform [form:5,flying]\n" ..
+        "/cancelform [form:3,flying]\n" ..
         "/use !Prowl\n" ..
-        "/use [nostealth]Shadowmeld\n" ..
-        "/stopmacro [nostealth]\n" ..
-        "/targetenemyplayer [stealth]\n" ..
-        "/stopmacro [noexists][noharm]\n" ..
-        "/use Pounce\n" ..
-        "/cleartarget"
+        "/use [nostealth]Shadowmeld"
       )
       self.button:SetAttribute("*macrotext3", -- Used when we have Incarnation.
-        "/cancelform [form:5,flying]\n" ..
-        "/use !Prowl\n" ..
-        "/use [stealth]Pounce"
+        "/cancelform [form:3,flying]\n" ..
+        "/use !Prowl"
       )
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         local spellId = select(2, GetActionInfo(owner:GetAttribute("prowlActionSlot")))
@@ -657,14 +610,14 @@ local macros = {
   },
   { key = "ALT-Z" },
   { key = "X", text = "/use Survival Instincts" },
-  { key = "SHIFT-X", text = "/use Barkskin" },
+  { key = "SHIFT-X", text = "" }, -- FREE!
   {
     key = "ALT-X",
     --[=[
     init = function(self)
       self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("*macrotext1", "/use [form:3]Force of Nature") -- Used when [@arena3,noexists].
-      self.button:SetAttribute("*macrotext2", "/use [@arena1,form:3]]Force of Nature") -- Used when [@arena3,exists].
+      self.button:SetAttribute("*macrotext1", "/use [form:2]Force of Nature") -- Used when [@arena3,noexists].
+      self.button:SetAttribute("*macrotext2", "/use [@arena1,form:2]]Force of Nature") -- Used when [@arena3,exists].
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         if UnitExists("arena3") then
           return "RightButton"
@@ -674,7 +627,7 @@ local macros = {
     end,
     ]=]
     update = function(self)
-      local name, _, _, _, selected = _G.GetTalentInfo(12)
+      local name, _, _, _, selected = _G.GetTalentInfo(4, 3, _G.GetActiveSpecGroup())
       if selected or not name then -- We are specced into Force of Nature or don't know.
         if (_G.select(2, _G.GetInstanceInfo())) == "arena" and _G.GetNumGroupMembers() == 3 then
           self.button:SetAttribute("*macrotext1", "/use [@arena1]Skull Bash")
@@ -691,12 +644,12 @@ local macros = {
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [harm].
-        "/use Disorienting Roar\n" ..
+        "/use Incapacitating Roar\n" ..
         "/use Ursol's Vortex\n" ..
         "/use [@mouseover,harm][]Mighty Bash"
       )
       self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
-        "/use Disorienting Roar\n" ..
+        "/use Incapacitating Roar\n" ..
         "/use Ursol's Vortex\n" ..
         "/use [@mouseover,harm]Mighty Bash\n" ..
         "/stopmacro [@mouseover,harm]\n" ..
@@ -717,7 +670,7 @@ local macros = {
   {
     key = "ALT-C",
     update = function(self)
-      local name, _, _, _, selected = _G.GetTalentInfo(12)
+      local name, _, _, _, selected = _G.GetTalentInfo(4, 3, _G.GetActiveSpecGroup())
       if selected or not name then -- We are specced into Force of Nature or don't know.
         if (_G.select(2, _G.GetInstanceInfo())) == "arena" and _G.GetNumGroupMembers() == 3 then
           self.button:SetAttribute("*macrotext1", "/use [@arena2]Skull Bash")
@@ -734,15 +687,10 @@ local macros = {
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [harm].
-        "/use [noform:1/3]Cat Form;Mangle"
+        ""
       )
       self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
-        "/use [noform:1/3]Cat Form\n" ..
-        "/stopmacro [noform:1/3]\n" ..
-        "/targetenemyplayer [stealth]\n" ..
-        "/stopmacro [noexists][noharm]\n" ..
-        "/use Mangle\n" ..
-        "/cleartarget"
+        ""
       )
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         if not UnitExists("target") or not PlayerCanAttack("target") then
@@ -757,7 +705,9 @@ local macros = {
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [harm].
-        "/use [@mouseover,harm][]Rake"
+        "/use [@mouseover,harm][]Rake\n" ..
+        "/stopattack [stealth]" -- Unlike Pounce, Rake and Shred will start auto-attack even when used in stealth, which
+                                -- is retarded.
       )
       self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
         "/use [@mouseover,harm]Rake\n" ..
@@ -778,7 +728,7 @@ local macros = {
   {
     key = "ALT-V",
     update = function(self)
-      local name, _, _, _, selected = _G.GetTalentInfo(12)
+      local name, _, _, _, selected = _G.GetTalentInfo(4, 3, _G.GetActiveSpecGroup())
       if selected or not name then -- We are specced into Force of Nature or don't know.
         self.button:SetAttribute("*macrotext1", "/use [@arena3]Skull Bash")
       else
@@ -791,8 +741,8 @@ local macros = {
   { key = "ALT-B", text = "/use [@mouseover,help,nodead][help,nodead][@player]Innervate", },
   {
     key = "N", text =
-      "/use [noform:1/3]Cat Form;[form:1/3,mod:shift]Swipe;[form:1/3]Thrash\n" ..
-      "/startattack [harm,nodead,form:1/3]",
+      "/use [noform:1/2]Cat Form;[form:1/2,mod:shift]Swipe;[form:1/2]Thrash\n" ..
+      "/startattack [harm,nodead,form:1/2]",
   },
   {
     key = "ALT-N", text =
@@ -822,13 +772,7 @@ local macros = {
       end
     end,
   },
-  {
-    key = "ALT-MOUSEWHEELUP", text =
-      "/targetexact Psyfiend\n" ..
-      "/startattack [exists,harm]\n" ..
-      "/use [exists,harm]Wild Charge\n" ..
-      "/use [exists,harm]Mangle",
-  },
+  { key = "ALT-MOUSEWHEELUP", text = "" }, -- FREE!
   {
     key = "MOUSEWHEELDOWN",
     update = function(self)
@@ -851,13 +795,7 @@ local macros = {
       end
     end,
   },
-  {
-    key = "ALT-MOUSEWHEELDOWN", text =
-      "/targetexact Wild Mushroom\n" ..
-      "/targetexact Psyfiend\n" ..
-      "/startattack [exists,harm]\n" ..
-      "/use [exists,harm]Skull Bash",
-  },
+  { key = "ALT-MOUSEWHEELDOWN", text = "" }, -- FREE!
   { --[[
     The macro for swapping target and focus (given both exists) would normally be:
       /tar focus
@@ -1101,7 +1039,7 @@ function handlerFrame:PLAYER_LOGIN()
   do
     -- Find the first action slot that Prowl (could be 5215 or 102547) is placed in. We can use it to find if
     -- Incarnation is active or not. If we move Prowl we have to /reload; TODO: can we find the new action slot directly
-    -- even if in combat? TODO: also find the action slot for Symbiosis.
+    -- even if in combat?
     -- http://wowpedia.org/API_GetActionInfo
     -- http://wowprogramming.com/docs/api/GetActionInfo
     local actionType, id, subType
