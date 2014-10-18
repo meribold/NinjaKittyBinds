@@ -25,6 +25,8 @@ setfenv(1, NinjaKittyBinds)
 -- 2: Cat Form
 -- 3: Travel Form
 
+-- As of patch 6.0.2, this pattern does not work anymore: "/castsequence 0,Cat Form". Cat Form will never be used.
+
 local secureHeader = _G.CreateFrame("Frame", nil, _G.UIParent, "SecureHandlerBaseTemplate")
 
 ---- < MACROS > --------------------------------------------------------------------------------------------------------
@@ -40,16 +42,14 @@ local macros = {
   { key = "SHIFT-1" },
   { key = "ALT-1" },
   { key = "2", text = "/use Healthstone" },
-  { key = "SHIFT-2", text = "" }, -- FREE!
-  {
-    key = "ALT-2", text =
+  { key = "SHIFT-2" }, -- FREE!
+  { key = "ALT-2", text =
       "/cancelaura Hand of Protection\n" ..
       "/cancelaura Prowl",
   },
   { key = "3", text = "/use Cyclone" },
   { key = "SHIFT-3", text = "/use [@focus]Cyclone" },
-  {
-    key = "ALT-3",
+  { key = "ALT-3",
     init = function(self)
       self.button:SetAttribute("type", "macro")
       --[[
@@ -145,7 +145,7 @@ local macros = {
           "/use 15\n" ..
           "/dismount"
         )
-      ]]) -- /castsequence [@player] Mark of the Wild,Foo\n resets on death.
+      ]]) -- "/castsequence [@player] Mark of the Wild,Foo" resets on death.
       self.button:RegisterForClicks("AnyDown")
     end,
     --[[
@@ -166,8 +166,7 @@ local macros = {
       "/use [@mouseover,help,dead]Rebirth;[@mouseover,help]Healing Touch;[help,dead]Rebirth;[help]Healing Touch;" ..
         "[@player]Healing Touch",
   },
-  {
-    key = "SHIFT-4",
+  { key = "SHIFT-4",
     update = function(self)
       self.button:SetAttribute("*macrotext1",
         "/use [@" .. db.party1 .. ",help,dead]Rebirth;[@" .. db.party1 .. ",help]Healing Touch"
@@ -191,22 +190,19 @@ local macros = {
     end,
   },
   ]=]
-  {
-    key = "ALT-4",
+  { key = "ALT-4",
     update = function(self)
       self.button:SetAttribute("*macrotext1",
         "/use [@" .. db.party2 .. ",help,dead]Rebirth;[@" .. db.party2 .. ",help]Healing Touch"
       )
     end,
   },
-  {
-    key = "5", text =
+  { key = "5", text =
       "/use [form:1]Frenzied Regeneration\n" ..
       "/use [@mouseover,help,dead]Revive;[@mouseover,help]Rejuvenation;[help,dead]Revive;[help]Rejuvenation;" ..
         "[@player]Rejuvenation",
   },
-  {
-    key = "SHIFT-5",
+  { key = "SHIFT-5",
     update = function(self)
       self.button:SetAttribute("*macrotext1",
         "/use [form:1]Frenzied Regeneration\n" ..
@@ -214,8 +210,7 @@ local macros = {
       )
     end,
   },
-  {
-    key = "ALT-5",
+  { key = "ALT-5",
     update = function(self)
       self.button:SetAttribute("*macrotext1",
         "/use [form:1]Frenzied Regeneration\n" ..
@@ -223,14 +218,12 @@ local macros = {
       )
     end,
   },
-  {
-    key = "6", text =
+  { key = "6", text =
       "/use Heart of the Wild\n" ..
       "/use Renewal\n" ..
       "/use [@mouseover,help,nodead][help,nodead][@player]Cenarion Ward",
   },
-  {
-    key = "SHIFT-6",
+  { key = "SHIFT-6",
     update = function(self)
       self.button:SetAttribute("*macrotext1",
         "/use [@" .. db.party1 .. ",help]Heart of the Wild\n" ..
@@ -238,8 +231,7 @@ local macros = {
       )
     end,
   },
-  {
-    key = "ALT-6",
+  { key = "ALT-6",
     update = function(self)
       self.button:SetAttribute("*macrotext1",
         "/use [@" .. db.party2 .. ",help]Heart of the Wild\n" ..
@@ -247,26 +239,9 @@ local macros = {
       )
     end,
   },
-  {
-    key = "TAB",
-    init = function(self)
-      self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("downbutton", "LeftButton")
-      self.button:SetAttribute("*macrotext1",
-        "/cancelaura Prowl\n" .. -- When we want to Shadowmeld, we want to Shadowmeld! We don't want to be told that
-        "/use Shadowmeld"        -- "a more powerful spell is already active".
-        --"/use !Prowl"
-      )
-      --[[
-      self.button:SetAttribute("*macrotext2",
-        "/use !Prowl"
-      )
-      ]]
-      self.button:RegisterForClicks("AnyDown", "AnyUp")
-    end,
-    bind = function(self)
-      _G.SetBindingClick(self.key, self.button:GetName(), "RightButton")
-    end
+  { key = "TAB", text =
+      "/cancelaura Prowl\n" .. -- When we want to Shadowmeld, we want to Shadowmeld! We don't want to be told that
+      "/use Shadowmeld",       -- "a more powerful spell is already active".
   },
   { key = "SHIFT-TAB" },
   { key = "ALT-TAB" },
@@ -275,15 +250,12 @@ local macros = {
     "/use [@arena1]Cyclone",
   },
   { key = "ALT-Q" },
-  {
-    key = "W", specs = { [103] = true },
+  { key = "W", specs = { [103] = true },
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when Incarnation isn't active (Prowl's spell ID is 5215).
         "/use Tiger's Fury\n" .. -- Tiger's Fury activates Cat Form.
-        "/use 14\n" ..
-        "/castsequence reset=1 0,Berserk\n" ..
-        "/castsequence reset=1 0,Berserking"
+        "/use 14"
       )
       self.button:SetAttribute("*macrotext2", -- Used when Incarnation is active (Prowl's spell ID is 102547).
         "/use Nature's Vigil\n" ..
@@ -306,80 +278,58 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  {
-    key = "SHIFT-W", specs = { [103] = true },
+  { key = "SHIFT-W", specs = { [103] = true },
     update = function(self)
       local _, _, _, _, incarnationSelected = _G.GetTalentInfo(4, 2, _G.GetActiveSpecGroup())
       local _, _, _, _, treantsSelected = _G.GetTalentInfo(4, 3, _G.GetActiveSpecGroup())
       if incarnationSelected then -- We are specced into Incarnation.
-        --[[
         self.button:SetAttribute("*macrotext1",
-          --"/use [form:1]Frenzied Regeneration\n" ..
-          --"/use Incarnation: King of the Jungle\n" .. -- Can't use Shred if we have this line b/c it's both on the GCD.
-          "/use Nature's Vigil\n" ..
-          "/castsequence [form:2]reset=1 0,Tiger's Fury\n" ..
-          "/castsequence [form:2]reset=1 0,14\n" ..
-          "/castsequence [form:2]reset=1 0,Berserk\n" ..
-          "/castsequence [form:2]reset=1 0,Berserking\n" ..
-          "/castsequence reset=30 Incarnation: King of the Jungle,Foo\n" .. -- We need the long skill name.
-          "/castsequence [form:2]reset=1 0,Shred"
-        )
-        ]]
-        self.button:SetAttribute("*macrotext1",
-          --"/cancelaura Incarnation: King of the Jungle\n" ..
           "/use Incarnation: King of the Jungle\n" ..
-          --"/castsequence reset=30 Incarnation: King of the Jungle,Shred\n" ..
           "/use Nature's Vigil"
         )
       elseif treantsSelected then
-        -- Treants aren't affected by: Savage Roar, Tiger's Fury, Nature's Vigil, Berserking (maybe haste in general?).
-        -- They are affected by bonuses to agility.
         self.button:SetAttribute("*macrotext1",
           "/use [noform:2]Cat Form\n" ..
           "/use [form:2]14\n" ..
           "/use [form:2]Force of Nature"
-        )
+        ) -- Treants aren't affected by: Savage Roar, Tiger's Fury, Nature's Vigil, Berserking (maybe haste in general?).
+        -- They are affected by bonuses to agility.
+
       else -- We are specced into Soul of the Forest or haven't selected a level 60 talent.
         self.button:SetAttribute("*macrotext1",
           "/use Nature's Vigil\n" ..
-          "/castsequence reset=1 0,Tiger's Fury\n" ..
-          "/castsequence reset=1 0,14\n" ..
-          "/castsequence reset=1 0,Berserk\n" ..
-          "/castsequence reset=1 0,Berserking"
+          "/use Tiger's Fury\n" ..
+          "/use 14\n" ..
+          "/use Berserk\n" ..
+          "/use Berserking"
         )
       end
     end,
   },
-  { key = "ALT-W", text = "" }, -- FREE!
-  {
-    key = "E", text =
+  { key = "ALT-W" }, -- FREE!
+  { key = "E", text =
       "/stopcasting\n" ..
       "/use Typhoon",
   },
-  { key = "SHIFT-E", text = "" }, -- FREE!
-  {
-    key = "ALT-E", text =
+  { key = "SHIFT-E" }, -- FREE!
+  { key = "ALT-E", text =
       "/use [@mouseover,help,nodead][@player]Mark of the Wild",
   },
-  {
-    key = "R", specs = { [103] = true }, text =
+  { key = "R", specs = { [103] = true }, text =
       "/use [form:1]Frenzied Regeneration\n" ..
       "/use [noform:2]Cat Form;Savage Roar",
   },
-  {
-    key = "SHIFT-R", text =
+  { key = "SHIFT-R", text =
       "/use [form:1]Frenzied Regeneration\n" ..
       "/use [noform:1]Bear Form",
   },
-  {
-    key = "ALT-R", text =
+  { key = "ALT-R", text =
       "/use Conjured Mana Buns\n" ..
       "/use Conjured Mana Pudding\n" ..
       "/use Cobo Cola\n" ..
       "/use Golden Carp Consomme",
   },
-  {
-    key = "T",
+  { key = "T",
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [harm].
@@ -399,18 +349,15 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  {
-    key = "SHIFT-T", text =
+  { key = "SHIFT-T", text =
       "/use [@focus]Faerie Fire",
   },
   { key = "ALT-T", text = "/use !Travel Form", },
-  {
-    key = "Y", specs = { [102] = true, [103] = true, [104] = true }, text =
+  { key = "Y", specs = { [102] = true, [103] = true, [104] = true }, text =
       "/use [form:1]Frenzied Regeneration\n" ..
       "/use [@mouseover,help,nodead][help,nodead][@player]Remove Corruption",
   },
-  {
-    key = "SHIFT-Y", specs = { [102] = true, [103] = true, [104] = true },
+  { key = "SHIFT-Y", specs = { [102] = true, [103] = true, [104] = true },
     update = function(self)
       self.button:SetAttribute("*macrotext1",
         "/use [form:1]Frenzied Regeneration\n" ..
@@ -418,8 +365,7 @@ local macros = {
       )
     end,
   },
-  {
-    key = "ALT-Y", specs = { [102] = true, [103] = true, [104] = true },
+  { key = "ALT-Y", specs = { [102] = true, [103] = true, [104] = true },
     update = function(self)
       self.button:SetAttribute("*macrotext1",
         "/use [form:1]Frenzied Regeneration\n" ..
@@ -427,15 +373,13 @@ local macros = {
       )
     end,
   },
-  {
-    key = "ESCAPE", text =
+  { key = "ESCAPE", text =
       "/use [form:1]Frenzied Regeneration\n" ..
       "/use [form:1]!Bear Form;[form:2]!Cat Form;[form:3][swimming][outdoors]!Travel Form;!Cat Form",
   },
   { key = "SHIFT-ESCAPE" },
   { key = "ALT-ESCAPE" },
-  {
-    key = "A", text =
+  { key = "A", text =
       "/use [form:1]Frenzied Regeneration\n" ..
       "/cancelform [form]\n" ..
       "/dismount [mounted]\n" ..
@@ -445,18 +389,7 @@ local macros = {
     "/use [@arena2]Cyclone",
   },
   { key = "ALT-A" },
-  --[[
-  {
-    key = "S", text =
-      "/stopcasting\n" ..
-      "/use Displacer Beast\n" ..
-      "/use [form:3][@mouseover,help,noform][@mouseover,harm,form:1/2][help,noform][harm,form:1/2][@party1,noform]" ..
-        "Wild Charge\n" ..
-      "/use [@party1,noform]1",
-  },
-  ]]
-  { -- Canceling form and using Wild Charge with just one click isn't possible (I think).
-    key = "S",
+  { key = "S", -- Canceling form and using Wild Charge with just one click isn't possible (I think).
     update = function(self)
       self.button:SetAttribute("*macrotext1",
         "/stopcasting\n" ..
@@ -466,14 +399,12 @@ local macros = {
       )
     end,
   },
-  {
-    key = "SHIFT-S", text =
+  { key = "SHIFT-S", text =
       "/stopcasting\n" ..
       "/use [@focus,noform:3]Wild Charge",
   },
   { key = "ALT-S", text = "/focus arena1" },
-  {
-    key = "D",
+  { key = "D",
     init = function(self)
       self.button:SetAttribute("type", "macro")
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
@@ -487,13 +418,11 @@ local macros = {
       self.button:SetAttribute("*macrotext1",
         "/stopcasting\n" ..
         "/use [@" .. db.party2 .. ",help,noform]Wild Charge\n" ..
-        --"/use [@" .. db.party2 .. ",help,noform]1\n" ..
         "/use [@mouseover,harm,form:1/2][harm,form:1/2]Skull Bash"
       )
       self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
         "/stopcasting\n" ..
         "/use [@" .. db.party2 .. ",help,noform]Wild Charge\n" ..
-        --"/use [@" .. db.party2 .. ",help,noform]1\n" ..
         "/stopmacro [@" .. db.party2 .. ",help,noform]\n" ..
         "/use [@mouseover,harm,form:1/2]Skull Bash\n" ..
         "/stopmacro [@mouseover,harm,form:1/2]\n" ..
@@ -506,8 +435,7 @@ local macros = {
   },
   { key = "SHIFT-D", text = "/use [@focus,harm]Skull Bash" },
   { key = "ALT-D", text = "/focus arena2" },
-  {
-    key = "F",
+  { key = "F",
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [noform:2].
@@ -552,7 +480,7 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  { key = "SHIFT-F", text = "" }, -- FREE!
+  { key = "SHIFT-F" }, -- FREE!
   { key = "ALT-F", text =
     "/focus arena3",
   },
@@ -561,19 +489,10 @@ local macros = {
         "[@focus,noform,mod:shift]Moonfire;[@target,noform]Moonfire",
   },
   { key = "ALT-G", text = "/focus arena4" },
-  --[[ Using the built-in macro UI for this.
-  {
-    key = "H", text =
-      "/use [harm,nodead]Hibernate",
-  },
-  {
-    key = "SHIFT-H", text =
-      "/use [@focus,harm,nodead]Hibernate",
-  },
-  --]]
+  { key = "H" }, -- FREE!
+  { key = "SHIFT-H" }, -- FREE!
   { key = "ALT-H", text = "/focus arena5" },
-  {
-    key = "Z", specs = { [103] = true },
+  { key = "Z", specs = { [103] = true },
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [harm].
@@ -605,14 +524,11 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end
   },
-  { key = "SHIFT-Z", text =
-    "/use [@arena3]Cyclone",
-  },
+  { key = "SHIFT-Z", text = "/use [@arena3]Cyclone" },
   { key = "ALT-Z" },
   { key = "X", text = "/use Survival Instincts" },
-  { key = "SHIFT-X", text = "" }, -- FREE!
-  {
-    key = "ALT-X",
+  { key = "SHIFT-X" }, -- FREE!
+  { key = "ALT-X",
     --[=[
     init = function(self)
       self.button:SetAttribute("type", "macro")
@@ -639,8 +555,7 @@ local macros = {
       end
     end,
   },
-  {
-    key = "C",
+  { key = "C",
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [harm].
@@ -667,8 +582,7 @@ local macros = {
     end,
   },
   { key = "SHIFT-C", text = "/use Maim" }, -- Maim doesn't seem to auto-acquire a target.
-  {
-    key = "ALT-C",
+  { key = "ALT-C",
     update = function(self)
       local name, _, _, _, selected = _G.GetTalentInfo(4, 3, _G.GetActiveSpecGroup())
       if selected or not name then -- We are specced into Force of Nature or don't know.
@@ -682,33 +596,14 @@ local macros = {
       end
     end,
   },
-  {
-    key = "V",
-    init = function(self)
-      self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("*macrotext1", -- Used when [harm].
-        ""
-      )
-      self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
-        ""
-      )
-      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
-        if not UnitExists("target") or not PlayerCanAttack("target") then
-          return "RightButton"
-        end
-      ]])
-      self.button:RegisterForClicks("AnyDown")
-    end,
-  },
-  {
-    key = "SHIFT-V",
+  { key = "V" }, -- FREE!
+  { key = "SHIFT-V",
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [harm].
         "/use [@mouseover,harm][]Rake\n" ..
         "/stopattack [stealth]" -- Unlike Pounce, Rake and Shred will start auto-attack even when used in stealth, which
-                                -- is retarded.
-      )
+      )                         -- is retarded.
       self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
         "/use [@mouseover,harm]Rake\n" ..
         "/stopmacro [@mouseover,harm]\n" ..
@@ -725,8 +620,7 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  {
-    key = "ALT-V",
+  { key = "ALT-V",
     update = function(self)
       local name, _, _, _, selected = _G.GetTalentInfo(4, 3, _G.GetActiveSpecGroup())
       if selected or not name then -- We are specced into Force of Nature or don't know.
@@ -738,20 +632,13 @@ local macros = {
   },
   { key = "B", text = "/use Entangling Roots" },
   { key = "SHIFT-B", text = "/use [@focus]Entangling Roots" },
-  { key = "ALT-B", text = "/use [@mouseover,help,nodead][help,nodead][@player]Innervate", },
-  {
-    key = "N", text =
+  { key = "ALT-B" }, -- FREE!
+  { key = "N", text =
       "/use [noform:1/2]Cat Form;[form:1/2,mod:shift]Swipe;[form:1/2]Thrash\n" ..
       "/startattack [harm,nodead,form:1/2]",
   },
-  {
-    key = "ALT-N", text =
-      --"/castsequence reset=1 0,Tranquility\n" ..
-      "/use Heart of the Wild\n" ..
-      "/use Tranquility",
-  },
-  {
-    key = "MOUSEWHEELUP",
+  { key = "ALT-N" }, -- FREE!
+  { key = "MOUSEWHEELUP",
     update = function(self)
       if (_G.select(2, _G.GetInstanceInfo())) == "arena" and _G.GetNumGroupMembers() == 2 then
         self.button:SetAttribute("*macrotext1",
@@ -772,9 +659,8 @@ local macros = {
       end
     end,
   },
-  { key = "ALT-MOUSEWHEELUP", text = "" }, -- FREE!
-  {
-    key = "MOUSEWHEELDOWN",
+  { key = "ALT-MOUSEWHEELUP" }, -- FREE!
+  { key = "MOUSEWHEELDOWN",
     update = function(self)
       if (_G.select(2, _G.GetInstanceInfo())) == "arena" and _G.GetNumGroupMembers() == 2 then
         self.button:SetAttribute("*macrotext1",
@@ -795,7 +681,7 @@ local macros = {
       end
     end,
   },
-  { key = "ALT-MOUSEWHEELDOWN", text = "" }, -- FREE!
+  { key = "ALT-MOUSEWHEELDOWN" }, -- FREE!
   { --[[
     The macro for swapping target and focus (given both exists) would normally be:
       /tar focus
