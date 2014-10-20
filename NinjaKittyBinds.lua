@@ -27,6 +27,11 @@ setfenv(1, NinjaKittyBinds)
 
 -- As of patch 6.0.2, this pattern does not work anymore: "/castsequence 0,Cat Form". Cat Form will never be used.
 
+-- [@target] stops some abilities from auto-acquiring a target. It does not stop them from dropping a friendly to
+-- acquire a hostile one.
+--
+-- TODO: Use IsInInstance() instead of GetInstanceInfo()?
+
 local secureHeader = _G.CreateFrame("Frame", nil, _G.UIParent, "SecureHandlerBaseTemplate")
 
 ---- < MACROS > --------------------------------------------------------------------------------------------------------
@@ -35,10 +40,16 @@ local secureHeader = _G.CreateFrame("Frame", nil, _G.UIParent, "SecureHandlerBas
 -- Used to have "/cancelaura [form:2]Incarnation: King of the Jungle".
 
 local macros = {
-  { key = "`", text = "/use Stampeding Roar" },
+  { key = "`", text =
+      "/cancelform [form:3,flying]\n" ..
+      "/use Stampeding Roar"
+  },
   { key = "SHIFT-`" },
   { key = "ALT-`" },
-  { key = "1", text = "/use Dash" },
+  { key = "1", text =
+      "/cancelform [form:3,flying]\n" ..
+      "/use Dash"
+  },
   { key = "SHIFT-1" },
   { key = "ALT-1" },
   { key = "2", text = "/use Healthstone" },
@@ -130,6 +141,7 @@ local macros = {
       -- TODO: do something clever about error messages.
       -- http://us.battle.net/wow/en/forum/topic/4253966114
       -- http://eu.battle.net/wow/en/forum/topic/3313065586
+      --[=[
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         local mount
         if IsFlyableArea() then
@@ -146,6 +158,10 @@ local macros = {
           "/dismount"
         )
       ]]) -- "/castsequence [@player] Mark of the Wild,Foo" resets on death.
+      ]=]
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
+        self:SetAttribute("*macrotext1", "/run C_MountJournal.Summon(0)")
+      ]])
       self.button:RegisterForClicks("AnyDown")
     end,
     --[[
@@ -254,6 +270,7 @@ local macros = {
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when Incarnation isn't active (Prowl's spell ID is 5215).
+        "/cancelform [form:3,flying]\n" ..
         "/use Tiger's Fury\n" .. -- Tiger's Fury activates Cat Form.
         "/use 14"
       )
@@ -395,7 +412,8 @@ local macros = {
         "/stopcasting\n" ..
         "/use Displacer Beast\n" ..
         "/use [form:3][@mouseover,help,noform][@mouseover,harm,form:1/2][help,noform][harm,form:1/2][@" .. db.party1
-          .. ",help,noform]Wild Charge"
+          .. ",help,noform]Wild Charge\n" ..
+        "/use [form:3]1"
       )
     end,
   },
@@ -485,8 +503,10 @@ local macros = {
     "/focus arena3",
   },
   { key = "G", text =
-      "/use [form:2,mod:shift]Ferocious Bite;[form:2]Rip;[form:1,nomod:shift]Thrash;[form:1]Swipe;" ..
-        "[@focus,noform,mod:shift]Moonfire;[@target,noform]Moonfire",
+      "/use [harm,form:2]Rip;[harm,form:1][@none,form:1]Thrash;[noform:1/2]Moonfire",
+  },
+  { key = "SHIFT-G", text =
+      "/use [harm,form:2]Ferocious Bite;[noform:2]Moonfire",
   },
   { key = "ALT-G", text = "/focus arena4" },
   { key = "H" }, -- FREE!
@@ -634,13 +654,24 @@ local macros = {
   { key = "SHIFT-B", text = "/use [@focus]Entangling Roots" },
   { key = "ALT-B" }, -- FREE!
   { key = "N", text =
-      "/use [noform:1/2]Cat Form;[form:1/2,mod:shift]Swipe;[form:1/2]Thrash\n" ..
-      "/startattack [harm,nodead,form:1/2]",
+      "/use [noform:2]Cat Form;[harm,form:2][@none,form:2]Thrash\n"--[[ ..
+      "/startattack [harm,nodead,form:1/2]"]],
+  },
+  { key = "SHIFT-N", text =
+      "/use [noform:2]Cat Form;[harm,form:2][@none,form:2]Swipe\n"--[[ ..
+      "/startattack [harm,nodead,form:1/2]"]],
   },
   { key = "ALT-N" }, -- FREE!
   { key = "MOUSEWHEELUP",
     update = function(self)
-      if (_G.select(2, _G.GetInstanceInfo())) == "arena" and _G.GetNumGroupMembers() == 2 then
+      --_G.print("GetInstanceInfo()", _G.GetInstanceInfo()) -- Works in PLAYER_ENTERING_WORLD.
+      --_G.print("IsActiveBattlefieldArena()", _G.IsActiveBattlefieldArena()) -- Doesn't work in PLAYER_ENTERING_WORLD.
+      --_G.print("GetNumArenaOpponents()", _G.GetNumArenaOpponents())
+      -- I think GetNumGroupMembers() isn't for instance groups, so it doesn't return useful infomation when
+      -- solo-queuing for Skirmishes.
+      --local numGroupMembers = _G.GetNumGroupMembers()
+      local numArenaOpponents = _G.GetNumArenaOpponentSpecs()
+      if (_G.select(2, _G.GetInstanceInfo())) == "arena" and not _G.UnitExists("party2") and numArenaOpponents < 3 then
         self.button:SetAttribute("*macrotext1",
           "/tar [@mouseover,exists,nomod]\n" ..
           "/targetenemy [mod:shift]\n" ..
@@ -662,7 +693,9 @@ local macros = {
   { key = "ALT-MOUSEWHEELUP" }, -- FREE!
   { key = "MOUSEWHEELDOWN",
     update = function(self)
-      if (_G.select(2, _G.GetInstanceInfo())) == "arena" and _G.GetNumGroupMembers() == 2 then
+      --local numGroupMembers = _G.GetNumGroupMembers()
+      local numArenaOpponents = _G.GetNumArenaOpponentSpecs()
+      if (_G.select(2, _G.GetInstanceInfo())) == "arena" and not _G.UnitExists("party2") and numArenaOpponents < 3 then
         self.button:SetAttribute("*macrotext1",
           "/focus [@mouseover,exists,nomod]\n" ..
           "/targetenemy [mod:shift] 1\n" ..
@@ -990,6 +1023,16 @@ function handlerFrame:PLAYER_SPECIALIZATION_CHANGED(unit)
   end
 end
 
+function handlerFrame:PLAYER_REGEN_DISABLED()
+  _G.assert(not _G.InCombatLockdown())
+  update()
+end
+
+function handlerFrame:ARENA_PREP_OPPONENT_SPECIALIZATIONS()
+  _G.assert(not _G.InCombatLockdown())
+  update()
+end
+
 function handlerFrame:PLAYER_REGEN_ENABLED()
   _G.assert(not _G.InCombatLockdown())
   update()
@@ -1001,5 +1044,7 @@ handlerFrame:RegisterEvent("PLAYER_LOGIN")
 handlerFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 --handlerFrame:RegisterEvent("SPELLS_CHANGED")
 handlerFrame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
+--handlerFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+handlerFrame:RegisterEvent("ARENA_PREP_OPPONENT_SPECIALIZATIONS")
 
 -- vim: tw=120 sw=2 et
