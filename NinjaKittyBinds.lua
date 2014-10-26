@@ -29,8 +29,10 @@ setfenv(1, NinjaKittyBinds)
 
 -- [@target] stops some abilities from auto-acquiring a target. It does not stop them from dropping a friendly to
 -- acquire a hostile one.
---
+
 -- TODO: Use IsInInstance() instead of GetInstanceInfo()?
+
+-- TODO: Glyph of the Stag.
 
 local secureHeader = _G.CreateFrame("Frame", nil, _G.UIParent, "SecureHandlerBaseTemplate")
 
@@ -159,9 +161,22 @@ local macros = {
         )
       ]]) -- "/castsequence [@player] Mark of the Wild,Foo" resets on death.
       ]=]
-      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
-        self:SetAttribute("*macrotext1", "/run C_MountJournal.Summon(0)")
-      ]])
+      -- "You are in shapeshift form".
+      --[[
+      self.button:SetAttribute("*macrotext1",
+        "/run C_MountJournal.Summon(0)"
+      )
+      ]]
+      -- TODO: we probably need to load "Blizzard_PetJournal" first to make this work. Does this:
+      -- function MountJournalSummonRandomFavoriteButton_OnClick(self)
+      --   MountJournal_Summon(0);
+      -- end
+      if not _G.IsAddOnLoaded("Blizzard_PetJournal") then
+        _G.LoadAddOn("Blizzard_PetJournal")
+      end
+      self.button:SetAttribute("*macrotext1",
+        "/click MountJournalSummonRandomFavoriteButton"
+      )
       self.button:RegisterForClicks("AnyDown")
     end,
     --[[
@@ -266,69 +281,18 @@ local macros = {
     "/use [@arena1]Cyclone",
   },
   { key = "ALT-Q" },
-  { key = "W", specs = { [103] = true },
-    init = function(self)
-      self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("*macrotext1", -- Used when Incarnation isn't active (Prowl's spell ID is 5215).
-        "/cancelform [form:3,flying]\n" ..
-        "/use Tiger's Fury\n" .. -- Tiger's Fury activates Cat Form.
-        "/use 14"
-      )
-      self.button:SetAttribute("*macrotext2", -- Used when Incarnation is active (Prowl's spell ID is 102547).
-        "/use Nature's Vigil\n" ..
-        "/use Tiger's Fury\n" ..
-        "/use 14\n" ..
-        "/use Berserk\n" ..
-        "/use Berserking\n" ..
-        "/use Shred"
-      )
-      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
-        local spellId = select(2, GetActionInfo(owner:GetAttribute("prowlActionSlot")))
-        if spellId == 5215 then
-          return
-        elseif spellId == 102547 then
-          return "RightButton"
-        else
-          return false
-        end
-      ]])
-      self.button:RegisterForClicks("AnyDown")
-    end,
-  },
-  { key = "SHIFT-W", specs = { [103] = true },
-    update = function(self)
-      local _, _, _, _, incarnationSelected = _G.GetTalentInfo(4, 2, _G.GetActiveSpecGroup())
-      local _, _, _, _, treantsSelected = _G.GetTalentInfo(4, 3, _G.GetActiveSpecGroup())
-      if incarnationSelected then -- We are specced into Incarnation.
-        self.button:SetAttribute("*macrotext1",
-          "/use Incarnation: King of the Jungle\n" ..
-          "/use Nature's Vigil"
-        )
-      elseif treantsSelected then
-        self.button:SetAttribute("*macrotext1",
-          "/use [noform:2]Cat Form\n" ..
-          "/use [form:2]14\n" ..
-          "/use [form:2]Force of Nature"
-        ) -- Treants aren't affected by: Savage Roar, Tiger's Fury, Nature's Vigil, Berserking (maybe haste in general?).
-        -- They are affected by bonuses to agility.
-
-      else -- We are specced into Soul of the Forest or haven't selected a level 60 talent.
-        self.button:SetAttribute("*macrotext1",
-          "/use Nature's Vigil\n" ..
-          "/use Tiger's Fury\n" ..
-          "/use 14\n" ..
-          "/use Berserk\n" ..
-          "/use Berserking"
-        )
-      end
-    end,
+  { key = "W", text = "/use Survival Instincts" },
+  { key = "SHIFT-W", text =
+      "/clearfocus",
   },
   { key = "ALT-W" }, -- FREE!
   { key = "E", text =
       "/stopcasting\n" ..
-      "/use Typhoon",
+      "/use [@arena1]Skull Bash",
   },
-  { key = "SHIFT-E" }, -- FREE!
+  { key = "SHIFT-E",text =
+      "/tar @arena1",
+  },
   { key = "ALT-E", text =
       "/use [@mouseover,help,nodead][@player]Mark of the Wild",
   },
@@ -346,7 +310,11 @@ local macros = {
       "/use Cobo Cola\n" ..
       "/use Golden Carp Consomme",
   },
-  { key = "T",
+  { key = "T", text =
+      "/stopcasting\n" ..
+      "/use Typhoon",
+  },
+  { key = "SHIFT-T",
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [harm].
@@ -365,9 +333,6 @@ local macros = {
       ]])
       self.button:RegisterForClicks("AnyDown")
     end,
-  },
-  { key = "SHIFT-T", text =
-      "/use [@focus]Faerie Fire",
   },
   { key = "ALT-T", text = "/use !Travel Form", },
   { key = "Y", specs = { [102] = true, [103] = true, [104] = true }, text =
@@ -392,21 +357,13 @@ local macros = {
   },
   { key = "ESCAPE", text =
       "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [form:1]!Bear Form;[form:2]!Cat Form;[form:3][swimming][outdoors]!Travel Form;!Cat Form",
-  },
-  { key = "SHIFT-ESCAPE" },
-  { key = "ALT-ESCAPE" },
-  { key = "A", text =
-      "/use [form:1]Frenzied Regeneration\n" ..
       "/cancelform [form]\n" ..
       "/dismount [mounted]\n" ..
       "/stopcasting",
   },
-  { key = "SHIFT-A", text =
-    "/use [@arena2]Cyclone",
-  },
-  { key = "ALT-A" },
-  { key = "S", -- Canceling form and using Wild Charge with just one click isn't possible (I think).
+  { key = "SHIFT-ESCAPE" },
+  { key = "ALT-ESCAPE" },
+  { key = "A", -- Canceling form and using Wild Charge with just one click isn't possible (I think).
     update = function(self)
       self.button:SetAttribute("*macrotext1",
         "/stopcasting\n" ..
@@ -417,12 +374,11 @@ local macros = {
       )
     end,
   },
-  { key = "SHIFT-S", text =
-      "/stopcasting\n" ..
-      "/use [@focus,noform:3]Wild Charge",
+  { key = "SHIFT-A", text =
+    "/use [@arena2]Cyclone",
   },
-  { key = "ALT-S", text = "/focus arena1" },
-  { key = "D",
+  { key = "ALT-A" },
+  { key = "S",
     init = function(self)
       self.button:SetAttribute("type", "macro")
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
@@ -450,6 +406,14 @@ local macros = {
         "/cleartarget"
       )
     end,
+  },
+  { key = "SHIFT-S", text =
+      "/focus party1",
+  },
+  { key = "ALT-S", text = "/focus arena1" },
+  { key = "D", text =
+      "/stopcasting\n" ..
+      "/use [@arena1]Skull Bash",
   },
   { key = "SHIFT-D", text = "/use [@focus,harm]Skull Bash" },
   { key = "ALT-D", text = "/focus arena2" },
@@ -498,7 +462,10 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  { key = "SHIFT-F" }, -- FREE!
+  { key = "SHIFT-F", text =
+      "/use [form:1]Frenzied Regeneration\n" ..
+      "/use [form:1]!Bear Form;[form:2]!Cat Form;[form:3][swimming][outdoors]!Travel Form;!Cat Form",
+  },
   { key = "ALT-F", text =
     "/focus arena3",
   },
@@ -509,7 +476,14 @@ local macros = {
       "/use [harm,form:2]Ferocious Bite;[noform:2]Moonfire",
   },
   { key = "ALT-G", text = "/focus arena4" },
-  { key = "H" }, -- FREE!
+  { key = "H", specs = { [102] = true, [103] = true, [104] = true },
+    update = function(self)
+      self.button:SetAttribute("*macrotext1",
+        "/use [form:1]Frenzied Regeneration\n" ..
+        "/use [@" .. db.party1 .. ",help]Remove Corruption"
+      )
+    end,
+  },
   { key = "SHIFT-H" }, -- FREE!
   { key = "ALT-H", text = "/focus arena5" },
   { key = "Z", specs = { [103] = true },
@@ -546,8 +520,63 @@ local macros = {
   },
   { key = "SHIFT-Z", text = "/use [@arena3]Cyclone" },
   { key = "ALT-Z" },
-  { key = "X", text = "/use Survival Instincts" },
-  { key = "SHIFT-X" }, -- FREE!
+  { key = "X", specs = { [103] = true },
+    init = function(self)
+      self.button:SetAttribute("type", "macro")
+      self.button:SetAttribute("*macrotext1", -- Used when Incarnation isn't active (Prowl's spell ID is 5215).
+        "/cancelform [form:3,flying]\n" ..
+        "/use Tiger's Fury\n" .. -- Tiger's Fury activates Cat Form.
+        "/use 14"
+      )
+      self.button:SetAttribute("*macrotext2", -- Used when Incarnation is active (Prowl's spell ID is 102547).
+        "/use Nature's Vigil\n" ..
+        "/use Tiger's Fury\n" ..
+        "/use 14\n" ..
+        "/use Berserk\n" ..
+        "/use Berserking\n" ..
+        "/use Shred"
+      )
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
+        local spellId = select(2, GetActionInfo(owner:GetAttribute("prowlActionSlot")))
+        if spellId == 5215 then
+          return
+        elseif spellId == 102547 then
+          return "RightButton"
+        else
+          return false
+        end
+      ]])
+      self.button:RegisterForClicks("AnyDown")
+    end,
+  },
+  { key = "SHIFT-X", specs = { [103] = true },
+    update = function(self)
+      local _, _, _, _, incarnationSelected = _G.GetTalentInfo(4, 2, _G.GetActiveSpecGroup())
+      local _, _, _, _, treantsSelected = _G.GetTalentInfo(4, 3, _G.GetActiveSpecGroup())
+      if incarnationSelected then -- We are specced into Incarnation.
+        self.button:SetAttribute("*macrotext1",
+          "/use Incarnation: King of the Jungle\n" ..
+          "/use Nature's Vigil"
+        )
+      elseif treantsSelected then
+        self.button:SetAttribute("*macrotext1",
+          "/use [noform:2]Cat Form\n" ..
+          "/use [form:2]14\n" ..
+          "/use [form:2]Force of Nature"
+        ) -- Treants aren't affected by: Savage Roar, Tiger's Fury, Nature's Vigil, Berserking (maybe haste in general?).
+        -- They are affected by bonuses to agility.
+
+      else -- We are specced into Soul of the Forest or haven't selected a level 60 talent.
+        self.button:SetAttribute("*macrotext1",
+          "/use Nature's Vigil\n" ..
+          "/use Tiger's Fury\n" ..
+          "/use 14\n" ..
+          "/use Berserk\n" ..
+          "/use Berserking"
+        )
+      end
+    end,
+  },
   { key = "ALT-X",
     --[=[
     init = function(self)
@@ -616,8 +645,7 @@ local macros = {
       end
     end,
   },
-  { key = "V" }, -- FREE!
-  { key = "SHIFT-V",
+  { key = "V",
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [harm].
@@ -640,6 +668,7 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
+  { key = "SHIFT-V", text = "/use Cyclone" },
   { key = "ALT-V",
     update = function(self)
       local name, _, _, _, selected = _G.GetTalentInfo(4, 3, _G.GetActiveSpecGroup())
@@ -654,12 +683,10 @@ local macros = {
   { key = "SHIFT-B", text = "/use [@focus]Entangling Roots" },
   { key = "ALT-B" }, -- FREE!
   { key = "N", text =
-      "/use [noform:2]Cat Form;[harm,form:2][@none,form:2]Thrash\n"--[[ ..
-      "/startattack [harm,nodead,form:1/2]"]],
+      "/use [noform:2]Cat Form;[harm,form:2][@none,form:2]Thrash",
   },
   { key = "SHIFT-N", text =
-      "/use [noform:2]Cat Form;[harm,form:2][@none,form:2]Swipe\n"--[[ ..
-      "/startattack [harm,nodead,form:1/2]"]],
+      "/use [noform:2]Cat Form;[harm,form:2][@none,form:2]Swipe",
   },
   { key = "ALT-N" }, -- FREE!
   { key = "MOUSEWHEELUP",
