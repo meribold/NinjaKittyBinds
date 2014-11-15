@@ -1,6 +1,6 @@
-## Interface: 50400
+## Interface: 60000
 ## Title: NinjaKittyBinds
-## Notes: Macros, wrapped into an AddOn
+## Notes: Macros. Wrapped into an AddOn (and some fancy stuff).
 ## OptionalDeps: Bartender4
 ## Author: meribold
 ## Version: 0.1

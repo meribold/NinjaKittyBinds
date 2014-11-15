@@ -30,9 +30,7 @@ setfenv(1, NinjaKittyBinds)
 -- [@target] stops some abilities from auto-acquiring a target. It does not stop them from dropping a friendly to
 -- acquire a hostile one.
 
--- TODO: Use IsInInstance() instead of GetInstanceInfo()?
-
--- TODO: Glyph of the Stag.
+-- TODO: Bind Moonfire. Do something clever about Glyph of the Stag.
 
 local secureHeader = _G.CreateFrame("Frame", nil, _G.UIParent, "SecureHandlerBaseTemplate")
 
@@ -100,23 +98,44 @@ local macros = {
   },
   { key = "ALT-3",
     init = function(self)
-      -- Doesn't work.
-      --[[
-      self.button:SetAttribute("type", "spell")
-      self.button:SetAttribute("*spell1", "Summon Random Favorite Mount")
-      self.button:RegisterForClicks("AnyDown")
-      ]]
-      --[[
-      self.button:SetAttribute("type", "summonmount")
-      self.button:RegisterForClicks("AnyDown")
-      ]]
+      -- Things I've tried that don't work. These two approaches don't work at all:
+      --   self.button:SetAttribute("*spell1", "Summon Random Favorite Mount")
+      --   self.button:SetAttribute("type", "summonmount")
+      -- This one basically works, but it can't cancel shapeshift forms:
+      --   self.button:SetAttribute("*macrotext1", "/run C_MountJournal.Summon(0)")
       if db.randomFavMountActionSlot then
-        self.button:SetAttribute("type", "action")
-        self.button:SetAttribute("action", db.randomFavMountActionSlot)
-        self.button:RegisterForClicks("AnyDown")
-        return
+        local randomFavMountButton = _G.CreateFrame("Button", "RandomFavoriteMountButton", _G.UIParent,
+          "SecureActionButtonTemplate")
+        randomFavMountButton:SetAttribute("type", "action")
+        randomFavMountButton:SetAttribute("action", db.randomFavMountActionSlot)
+        randomFavMountButton:RegisterForClicks("AnyDown")
+        self.button:SetAttribute("type", "macro")
+        self.button:SetAttribute("*macrotext1",
+          "/cancelaura Goblin Glider\n" ..
+          "/castsequence [@player] Mark of the Wild,Foo\n" ..
+          "/click RandomFavoriteMountButton\n" ..
+          "/use 15\n" ..
+          "/dismount"
+        )
+      else
+        _G.error("\"Summon Random Favorite Mount\" not found on action bars.")
+        --[[
+        self.button:SetAttribute("type", "macro")
+        if not _G.IsAddOnLoaded("Blizzard_PetJournal") then
+          _G.LoadAddOn("Blizzard_PetJournal")
+        end
+        self.button:SetAttribute("*macrotext1",
+            "/cancelaura Goblin Glider\n" ..
+            "/castsequence [@player] Mark of the Wild,Foo\n" ..
+            "/click MountJournalSummonRandomFavoriteButton\n" ..
+            "/use 15\n" ..
+            "/dismount"
+        )
+        ]]
+        -- "/click MountJournalSummonRandomFavoriteButton" just calls "MountJournal_Summon(0)". See the definition of
+        -- MountJournalSummonRandomFavoriteButton_OnClick() in "Blizzard_PetBattleUI.lua".
       end
-      self.button:SetAttribute("type", "macro")
+      self.button:RegisterForClicks("AnyDown")
       --[[
       local favoriteMounts = {
         ["Black War Bear"] = true,
@@ -158,6 +177,7 @@ local macros = {
         end
       end
       --]]
+      --[=[
       if _G.UnitName("player") == "Mornedhel" or _G.UnitName("player") == "Mornwen" then
         _G.SecureHandlerExecute(secureHeader, [[
           favoriteMounts = table.new(
@@ -192,6 +212,7 @@ local macros = {
           )
         ]])
       end
+      ]=]
       -- TODO: do something clever about error messages.
       -- http://us.battle.net/wow/en/forum/topic/4253966114
       -- http://eu.battle.net/wow/en/forum/topic/3313065586
@@ -213,27 +234,6 @@ local macros = {
         )
       ]]) -- "/castsequence [@player] Mark of the Wild,Foo" resets on death.
       ]=]
-      -- "You are in shapeshift form".
-      --[[
-      self.button:SetAttribute("*macrotext1",
-        "/run C_MountJournal.Summon(0)"
-      )
-      ]]
-      -- TODO: we probably need to load "Blizzard_PetJournal" first to make this work. Does this:
-      -- function MountJournalSummonRandomFavoriteButton_OnClick(self)
-      --   MountJournal_Summon(0);
-      -- end
-      if not _G.IsAddOnLoaded("Blizzard_PetJournal") then
-        _G.LoadAddOn("Blizzard_PetJournal")
-      end
-      self.button:SetAttribute("*macrotext1",
-          "/cancelaura Goblin Glider\n" ..
-          "/castsequence [@player] Mark of the Wild,Foo\n" ..
-          "/click MountJournalSummonRandomFavoriteButton\n" ..
-          "/use 15\n" ..
-          "/dismount"
-      )
-      self.button:RegisterForClicks("AnyDown")
     end,
     --[[
     text =
@@ -338,18 +338,8 @@ local macros = {
   },
   { key = "ALT-Q" },
   { key = "W", text = "/use Survival Instincts" },
-  { key = "SHIFT-W",
-    update = function(self)
-      if (_G.select(2, _G.IsInInstance())) == "arena" then
-        self.button:SetAttribute("*macrotext1",
-          "/use [@arena1]Entangling Roots"
-        )
-      else
-        self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Entangling Roots"
-        )
-      end
-    end,
+  { key = "SHIFT-W",text =
+      "/tar arena1",
   },
   { key = "ALT-W",
     update = function(self)
@@ -368,77 +358,7 @@ local macros = {
       "/stopcasting\n" ..
       "/use [noform:1/2]Cat Form;[@arena1]Skull Bash",
   },
-  { key = "SHIFT-E",text =
-      "/tar arena1",
-  },
-  { key = "ALT-E",
-    update = function(self)
-      if (_G.select(2, _G.IsInInstance())) == "arena" then
-        self.button:SetAttribute("*macrotext1",
-          "/use [@arena1]Maim"
-        )
-      else
-        self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Maim"
-        )
-      end
-    end,
-  },
-  { key = "R", text =
-      "/use [noform:2]Cat Form;Maim" -- Maim doesn't seem to auto-acquire a target.
-  },
-  { key = "SHIFT-R", specs = { [103] = true }, text =
-      "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [noform:2]Cat Form;Savage Roar",
-  },
-  --[[
-  { key = "ALT-R", text =
-      "/use Conjured Mana Buns\n" ..
-      "/use Conjured Mana Pudding\n" ..
-      "/use Cobo Cola\n" ..
-      "/use Golden Carp Consomme",
-  },
-  ]]
-  { key = "ALT-R",
-    update = function(self)
-      if (_G.select(2, _G.IsInInstance())) == "arena" then
-        self.button:SetAttribute("*macrotext1",
-          "/use [@arena1]Mighty Bash"
-        )
-      else
-        self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Mighty Bash"
-        )
-      end
-    end,
-  },
-  { key = "T", text =
-      "/stopcasting\n" ..
-      "/use Typhoon",
-  },
-  --[=[
-  { key = "SHIFT-T",
-    init = function(self)
-      self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("*macrotext1", -- Used when [harm].
-        "/use Faerie Fire"
-      )
-      self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
-        "/targetenemyplayer [stealth]\n" ..
-        "/stopmacro [noexists][noharm]\n" ..
-        "/use Faerie Fire\n" ..
-        "/cleartarget"
-      )
-      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
-        if not UnitExists("target") or not PlayerCanAttack("target") then
-          return "RightButton"
-        end
-      ]])
-      self.button:RegisterForClicks("AnyDown")
-    end,
-  },
-  ]=]
-  { key = "SHIFT-T",
+  { key = "SHIFT-E",
     update = function(self)
       if (_G.select(2, _G.IsInInstance())) == "arena" then
         self.button:SetAttribute("*macrotext1",
@@ -451,7 +371,7 @@ local macros = {
       end
     end,
   },
-  { key = "ALT-T",
+  { key = "ALT-E",
     update = function(self)
       if (_G.select(2, _G.IsInInstance())) == "arena" then
         self.button:SetAttribute("*macrotext1",
@@ -460,6 +380,56 @@ local macros = {
       else
         self.button:SetAttribute("*macrotext1",
           "/use [@focus]Faerie Fire"
+        )
+      end
+    end,
+  },
+  { key = "R", text =
+      "/use [noform:2]Cat Form;Maim" -- Maim doesn't seem to auto-acquire a target.
+  },
+  { key = "SHIFT-R", specs = { [103] = true }, text =
+      "/use [form:1]Frenzied Regeneration\n" ..
+      "/use [noform:2]Cat Form;Savage Roar",
+  },
+  { key = "ALT-R",
+    update = function(self)
+      if (_G.select(2, _G.IsInInstance())) == "arena" then
+        self.button:SetAttribute("*macrotext1",
+          "/use [@arena1]Maim"
+        )
+      else
+        self.button:SetAttribute("*macrotext1",
+          "/use [@focus]Maim"
+        )
+      end
+    end,
+  },
+  { key = "T", text =
+      "/stopcasting\n" ..
+      "/use Typhoon",
+  },
+  { key = "SHIFT-T",
+    update = function(self)
+      if (_G.select(2, _G.IsInInstance())) == "arena" then
+        self.button:SetAttribute("*macrotext1",
+          "/use [@arena1]Entangling Roots"
+        )
+      else
+        self.button:SetAttribute("*macrotext1",
+          "/use [@focus]Entangling Roots"
+        )
+      end
+    end,
+  },
+  { key = "ALT-T",
+    update = function(self)
+      if (_G.select(2, _G.IsInInstance())) == "arena" then
+        self.button:SetAttribute("*macrotext1",
+          "/use [@arena1]Mighty Bash"
+        )
+      else
+        self.button:SetAttribute("*macrotext1",
+          "/use [@focus]Mighty Bash"
         )
       end
     end,
@@ -532,18 +502,8 @@ local macros = {
     end,
   },
   --]=]
-  { key = "SHIFT-S",
-    update = function(self)
-      if (_G.select(2, _G.IsInInstance())) == "arena" then
-        self.button:SetAttribute("*macrotext1",
-          "/use [@arena2]Entangling Roots"
-        )
-      else
-        self.button:SetAttribute("*macrotext1",
-          "/use Entangling Roots"
-        )
-      end
-    end,
+  { key = "SHIFT-S",text =
+      "/tar arena2",
   },
   { key = "ALT-S",
     update = function(self)
@@ -573,23 +533,28 @@ local macros = {
       end
     end,
   },
-  --[[
-  { key = "SHIFT-D", text =
-      "/use [noform:1/2]Cat Form;[@focus,harm]Skull Bash"
-  },
-  ]]
-  { key = "SHIFT-D",text =
-      "/tar arena2",
+  { key = "SHIFT-D",
+    update = function(self)
+      if (_G.select(2, _G.IsInInstance())) == "arena" then
+        self.button:SetAttribute("*macrotext1",
+          "/use [@arena2]Cyclone"
+        )
+      else
+        self.button:SetAttribute("*macrotext1",
+          "/use Cyclone"
+        )
+      end
+    end,
   },
   { key = "ALT-D",
     update = function(self)
       if (_G.select(2, _G.IsInInstance())) == "arena" then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena2]Maim"
+          "/use [@arena2]Faerie Fire"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use Maim"
+          "/use Faerie Fire"
         )
       end
     end,
@@ -646,20 +611,15 @@ local macros = {
     update = function(self)
       if (_G.select(2, _G.IsInInstance())) == "arena" then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena2]Mighty Bash"
+          "/use [@arena2]Maim"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@target]Mighty Bash"
+          "/use [@target]Maim"
         )
       end
     end,
   },
-  --[[
-  { key = "G", text =
-      "/use [harm,form:2]Rip;[harm,form:1][@none,form:1]Thrash;[noform:1/2]Moonfire",
-  },
-  ]]
   { key = "G",
     init = function(self)
       self.button:SetAttribute("type", "macro")
@@ -690,11 +650,11 @@ local macros = {
     update = function(self)
       if (_G.select(2, _G.IsInInstance())) == "arena" then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena2]Cyclone"
+          "/use [@arena2]Entangling Roots"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use Cyclone"
+          "/use Entangling Roots"
         )
       end
     end,
@@ -703,11 +663,11 @@ local macros = {
     update = function(self)
       if (_G.select(2, _G.IsInInstance())) == "arena" then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena2]Faerie Fire"
+          "/use [@arena2]Mighty Bash"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use Faerie Fire"
+          "/use Mighty Bash"
         )
       end
     end,
@@ -800,18 +760,8 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  { key = "SHIFT-X",
-    update = function(self)
-      if (_G.select(2, _G.IsInInstance())) == "arena" then
-        self.button:SetAttribute("*macrotext1",
-          "/use [@arena3]Entangling Roots"
-        )
-      else
-        self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Entangling Roots"
-        )
-      end
-    end,
+  { key = "SHIFT-X",text =
+      "/tar arena3",
   },
   --[[
   { key = "SHIFT-X", specs = { [103] = true },
@@ -843,35 +793,6 @@ local macros = {
     end,
   },
   ]]
-  --[==[
-  { key = "ALT-X",
-    --[=[
-    init = function(self)
-      self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("*macrotext1", "/use [form:2]Force of Nature") -- Used when [@arena3,noexists].
-      self.button:SetAttribute("*macrotext2", "/use [@arena1,form:2]]Force of Nature") -- Used when [@arena3,exists].
-      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
-        if UnitExists("arena3") then
-          return "RightButton"
-        end
-      ]])
-      self.button:RegisterForClicks("AnyDown")
-    end,
-    ]=]
-    update = function(self)
-      local name, _, _, _, selected = _G.GetTalentInfo(4, 3, _G.GetActiveSpecGroup())
-      if selected or not name then -- We are specced into Force of Nature or don't know.
-        if (_G.select(2, _G.IsInInstance())) == "arena" and _G.GetNumGroupMembers() == 3 then
-          self.button:SetAttribute("*macrotext1", "/use [@arena1]Skull Bash")
-        else
-          self.button:SetAttribute("*macrotext1", "/use [@arena1]Skull Bash")
-        end
-      else
-        self.button:SetAttribute("*macrotext1", "/use [@arena1]Skull Bash")
-      end
-    end,
-  },
-  ]==]
   { key = "ALT-X",
     update = function(self)
       if (_G.select(2, _G.IsInInstance())) == "arena" then
@@ -889,38 +810,32 @@ local macros = {
       "/stopcasting\n" ..
       "/use [noform:1/2]Cat Form;[@arena3]Skull Bash",
   },
-  { key = "SHIFT-C",text =
-      "/tar arena3",
+  { key = "SHIFT-C",
+    update = function(self)
+      if (_G.select(2, _G.IsInInstance())) == "arena" then
+        self.button:SetAttribute("*macrotext1",
+          "/use [@arena3]Cyclone"
+        )
+      else
+        self.button:SetAttribute("*macrotext1",
+          "/use [@focus]Cyclone"
+        )
+      end
+    end,
   },
   { key = "ALT-C",
     update = function(self)
       if (_G.select(2, _G.IsInInstance())) == "arena" then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena3]Maim"
+          "/use [@arena3]Faerie Fire"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Maim"
+          "/use [@focus]Faerie Fire"
         )
       end
     end,
   },
-  --[[
-  { key = "ALT-C",
-    update = function(self)
-      local name, _, _, _, selected = _G.GetTalentInfo(4, 3, _G.GetActiveSpecGroup())
-      if selected or not name then -- We are specced into Force of Nature or don't know.
-        if (_G.select(2, _G.IsInInstance())) == "arena" and _G.GetNumGroupMembers() == 3 then
-          self.button:SetAttribute("*macrotext1", "/use [@arena2]Skull Bash")
-        else
-          self.button:SetAttribute("*macrotext1", "/use [@arena2]Skull Bash")
-        end
-      else
-        self.button:SetAttribute("*macrotext1", "/use [@arena2]Skull Bash")
-      end
-    end,
-  },
-  ]]
   { key = "V",
     init = function(self)
       self.button:SetAttribute("type", "macro")
@@ -947,27 +862,15 @@ local macros = {
   { key = "SHIFT-V", text =
       "/use [noform:2]Cat Form;[harm]Rip",
   },
-  --[[
-  { key = "ALT-V",
-    update = function(self)
-      local name, _, _, _, selected = _G.GetTalentInfo(4, 3, _G.GetActiveSpecGroup())
-      if selected or not name then -- We are specced into Force of Nature or don't know.
-        self.button:SetAttribute("*macrotext1", "/use [@arena3]Skull Bash")
-      else
-        self.button:SetAttribute("*macrotext1", "/use [@arena3]Skull Bash")
-      end
-    end,
-  },
-  ]]
   { key = "ALT-V",
     update = function(self)
       if (_G.select(2, _G.IsInInstance())) == "arena" then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena3]Mighty Bash"
+          "/use [@arena3]Maim"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Mighty Bash"
+          "/use [@focus]Maim"
         )
       end
     end,
@@ -980,11 +883,11 @@ local macros = {
     update = function(self)
       if (_G.select(2, _G.IsInInstance())) == "arena" then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena3]Cyclone"
+          "/use [@arena3]Entangling Roots"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Cyclone"
+          "/use [@focus]Entangling Roots"
         )
       end
     end,
@@ -993,11 +896,11 @@ local macros = {
     update = function(self)
       if (_G.select(2, _G.IsInInstance())) == "arena" then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena3]Faerie Fire"
+          "/use [@arena3]Mighty Bash"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Faerie Fire"
+          "/use [@focus]Mighty Bash"
         )
       end
     end,
