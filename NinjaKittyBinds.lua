@@ -19,11 +19,9 @@ setfenv(1, NinjaKittyBinds)
 
 -- Add /mountspeical to Savage Roar macros? This animation is now played by default when using Savage Roar.
 
--- Form numbers as of Patch 6.0.2.
--- 0: No Form
--- 1: Bear Form
--- 2: Cat Form
--- 3: Travel Form
+-- Form numbers as of Patch 6.0.2. No Form (0), Bear Form (1), Cat Form (2), Travel Form (3).  Doesn't match with
+-- GetBonusBarOffset() return values. Those are (according to http://wowpedia.org/API_GetBonusBarOffset):
+-- No Form (0), Cat Form (1), Tree of Life (2), Bear Form (3) and Moonkin (4).
 
 -- As of patch 6.0.2, this pattern does not work anymore: "/castsequence 0,Cat Form". Cat Form will never be used.
 
@@ -61,8 +59,10 @@ local macros = {
   { key = "ALT-2", text =
       "/cancelaura Hand of Protection\n" ..
       "/cancelaura Prowl\n" ..
+      "/use [nocombat]Conjured Mana Fritter\n" ..
       "/use [nocombat]Conjured Mana Buns\n" ..
       "/use [nocombat]Conjured Mana Pudding\n" ..
+      "/use [nocombat]Gorgrond Mineral Water\n" ..
       "/use [nocombat]Cobo Cola\n" ..
       "/use [nocombat]Golden Carp Consomme",
   },
@@ -112,6 +112,7 @@ local macros = {
         self.button:SetAttribute("type", "macro")
         self.button:SetAttribute("*macrotext1",
           "/cancelaura Goblin Glider\n" ..
+          "/cancelaura Parachute\n" .. -- Parachute triggered after nitro boosts (55016) failed.
           "/castsequence [@player] Mark of the Wild,Foo\n" ..
           "/click RandomFavoriteMountButton\n" ..
           "/use 15\n" ..
@@ -349,14 +350,25 @@ local macros = {
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus,form:1/2]Wild Charge"
+          "/use [form:1/2]Wild Charge"
         )
       end
     end,
   },
-  { key = "E", text =
-      "/stopcasting\n" ..
-      "/use [noform:1/2]Cat Form;[@arena1]Skull Bash",
+  { key = "E",
+    update = function(self)
+      if (_G.select(2, _G.IsInInstance())) == "arena" then
+        self.button:SetAttribute("*macrotext1",
+          "/stopcasting\n" ..
+          "/use [noform:1/2]Cat Form;[@arena1]Skull Bash"
+        )
+      else
+        self.button:SetAttribute("*macrotext1",
+          "/stopcasting\n" ..
+          "/use [noform:1/2]Cat Form;Skull Bash"
+        )
+      end
+    end,
   },
   { key = "SHIFT-E",
     update = function(self)
@@ -366,7 +378,7 @@ local macros = {
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Cyclone"
+          "/use Cyclone"
         )
       end
     end,
@@ -375,11 +387,13 @@ local macros = {
     update = function(self)
       if (_G.select(2, _G.IsInInstance())) == "arena" then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena1]Faerie Fire"
+          "/use [@arena1]Faerie Fire\n" ..
+          "/use [@arena1]Faerie Swarm"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Faerie Fire"
+          "/use Faerie Fire\n" ..
+          "/use Faerie Swarm"
         )
       end
     end,
@@ -399,14 +413,15 @@ local macros = {
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Maim"
+          "/use [@target]Maim"
         )
       end
     end,
   },
   { key = "T", text =
       "/stopcasting\n" ..
-      "/use Typhoon",
+      "/use Typhoon\n" ..
+      "/use Mass Entanglement",
   },
   { key = "SHIFT-T",
     update = function(self)
@@ -416,7 +431,7 @@ local macros = {
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Entangling Roots"
+          "/use Entangling Roots"
         )
       end
     end,
@@ -429,7 +444,7 @@ local macros = {
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Mighty Bash"
+          "/use Mighty Bash"
         )
       end
     end,
@@ -446,15 +461,15 @@ local macros = {
   },
   { key = "ESCAPE", text =
       "/use [form:1]Frenzied Regeneration\n" ..
-      "/cancelform [form]\n" ..
-      "/dismount [mounted]\n" ..
-      "/stopcasting",
+      "/use [form:1]!Bear Form;[form:2]!Cat Form;[form:3][swimming]!Travel Form;!Cat Form",
   },
   { key = "SHIFT-ESCAPE" },
   { key = "ALT-ESCAPE" },
   { key = "A", text =
       "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [form:1]!Bear Form;[form:2]!Cat Form;[form:3][swimming]!Travel Form;!Cat Form",
+      "/cancelform [form]\n" ..
+      "/dismount [mounted]\n" ..
+      "/stopcasting",
   },
   { key = "SHIFT-A", text =
       "",
@@ -513,7 +528,7 @@ local macros = {
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [form:1/2]Wild Charge"
+          "/use [@focus,exists,form:1/2][form:1/2]Wild Charge"
         )
       end
     end,
@@ -528,7 +543,7 @@ local macros = {
       else
         self.button:SetAttribute("*macrotext1",
           "/stopcasting\n" ..
-          "/use [noform:1/2]Cat Form;[@mouseover,harm][]Skull Bash"
+          "/use [noform:1/2]Cat Form;[@mouseover,harm][@focus,exists][]Skull Bash"
         )
       end
     end,
@@ -541,7 +556,7 @@ local macros = {
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use Cyclone"
+          "/use [@focus,exists][]Cyclone"
         )
       end
     end,
@@ -550,19 +565,22 @@ local macros = {
     update = function(self)
       if (_G.select(2, _G.IsInInstance())) == "arena" then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena2]Faerie Fire"
+          "/use [@arena2]Faerie Fire\n" ..
+          "/use [@arena2]Faerie Swarm"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use Faerie Fire"
+          "/use [@focus,exists][]Faerie Fire\n" ..
+          "/use [@focus,exists][]Faerie Swarm"
         )
       end
     end,
   },
-  { key = "F",
+  { key = "F", -- Shred auto-acquires a target when without a hostile target.
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [noform:2].
+        "/use [form:1]Frenzied Regeneration\n" ..
         "/use Cat Form"
       )
       self.button:SetAttribute("*macrotext2", -- Used when [harm].
@@ -579,26 +597,22 @@ local macros = {
         "/use [harm]Shred\n" ..
         "/cleartarget"
       )
-      self.button:SetAttribute("*macrotext4", -- Used when we have Incarnation.
-        "/use [harm]Shred" -- Shred auto-acquires a target when without a hostile target.
+      self.button:SetAttribute("*macrotext4", -- Was used when we have Incarnation. Currently unused.
+        "/use [form:1]Frenzied Regeneration\n" ..
+        "/use [noform:2]Cat Form;[@mouseover,harm][harm]Shred\n" ..  -- Shred auto-acquires a target when without a
+        "/stopattack [stealth]"                                      -- hostile target.
       )
-      -- Our snippets get these arguments: self, button, down.  See
+      -- Our snippets get these arguments: self, button, down. See
       -- "http://wowprogramming.com/utils/xmlbrowser/live/FrameXML/SecureTemplates.lua" and "Iriel’s Field Guide to
       -- Secure Handlers".
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         local spellId = select(2, GetActionInfo(owner:GetAttribute("prowlActionSlot")))
-        if spellId == 5215 then
-          if GetBonusBarOffset() == 1 then
-            if UnitExists("target") and PlayerCanAttack("target") then
-              return "RightButton"
-            else
-              return "MiddleButton"
-            end
+        if GetBonusBarOffset() == 1 then
+          if UnitExists("target") and PlayerCanAttack("target") then
+            return "RightButton"
+          else
+            return "MiddleButton"
           end
-        elseif spellId == 102547 then
-          return "Button4"
-        else
-          return false
         end
       ]])
       self.button:RegisterForClicks("AnyDown")
@@ -615,7 +629,7 @@ local macros = {
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@target]Maim"
+          "/use [@focus,exists][@target]Maim"
         )
       end
     end,
@@ -654,7 +668,7 @@ local macros = {
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use Entangling Roots"
+          "/use [@focus,exists][]Entangling Roots"
         )
       end
     end,
@@ -667,7 +681,7 @@ local macros = {
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use Mighty Bash"
+          "/use [@focus,exists][]Mighty Bash"
         )
       end
     end,
@@ -721,8 +735,10 @@ local macros = {
   },
   ]=]
   { key = "Z", text =
+      "/use [form:2,nocombat,nostealth]Conjured Mana Fritter\n" ..
       "/use [form:2,nocombat,nostealth]Conjured Mana Buns\n" ..
       "/use [form:2,nocombat,nostealth]Conjured Mana Pudding\n" ..
+      "/use [form:2,nocombat,nostealth]Gorgrond Mineral Water\n" ..
       "/use [form:2,nocombat,nostealth]Cobo Cola\n" ..
       "/use [form:2,nocombat,nostealth]Golden Carp Consomme\n" ..
       "/cancelform [form:3,flying]\n" ..
@@ -742,9 +758,10 @@ local macros = {
       )
       self.button:SetAttribute("*macrotext2", -- Used when Incarnation is active (Prowl's spell ID is 102547).
         "/cancelform [form:3,flying]\n" ..
-        "/use Tiger's Fury\n" ..
         "/use 14\n" ..
         "/use Berserk\n" ..
+        "/use Tiger's Fury\n" .. -- This always should be used after Berserk now. Tiger's Fury used to be unusable while
+                                 -- Berserk is active.
         "/use Berserking"
       )
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
@@ -784,9 +801,9 @@ local macros = {
       else -- We are specced into Soul of the Forest or haven't selected a level 60 talent.
         self.button:SetAttribute("*macrotext1",
           "/use Nature's Vigil\n" ..
-          "/use Tiger's Fury\n" ..
           "/use 14\n" ..
           "/use Berserk\n" ..
+          "/use Tiger's Fury\n" ..
           "/use Berserking"
         )
       end
@@ -827,11 +844,13 @@ local macros = {
     update = function(self)
       if (_G.select(2, _G.IsInInstance())) == "arena" then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena3]Faerie Fire"
+          "/use [@arena3]Faerie Fire\n" ..
+          "/use [@arena3]Faerie Swarm"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Faerie Fire"
+          "/use [@focus]Faerie Fire\n" ..
+          "/use [@focus]Faerie Swarm"
         )
       end
     end,
@@ -849,10 +868,17 @@ local macros = {
         "/targetenemyplayer [stealth]\n" ..
         "/stopmacro [noexists][noharm]\n" ..
         "/use Rake\n" ..
+        "/stopattack [stealth]\n" ..
         "/cleartarget"
       )
+      self.button:SetAttribute("*macrotext3", -- Used when [noform:2].
+        "/use [form:1]Frenzied Regeneration\n" ..
+        "/use Cat Form"
+      )
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
-        if not UnitExists("target") or not PlayerCanAttack("target") then
+        if GetBonusBarOffset() ~= 1 then
+          return "MiddleButton"
+        elseif not UnitExists("target") or not PlayerCanAttack("target") then
           return "RightButton"
         end
       ]])
