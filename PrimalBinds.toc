@@ -6,4 +6,4 @@
 ## Version: 0.1
 ## SavedVariables: NinjaKittyBindsDB
 
-NinjaKittyBinds.lua
+PrimalBinds.lua
