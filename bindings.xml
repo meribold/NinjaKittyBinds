@@ -1,0 +1,5 @@
+<Bindings>
+  <Binding name="DONOTHING" header="PRIMALBINDS" />
+</Bindings>
+
+<!-- vim: set tw=120 sts=2 sw=2 et: -->

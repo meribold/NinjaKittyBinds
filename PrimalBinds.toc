@@ -1,9 +1,10 @@
-## Interface: 60000
-## Title: NinjaKittyBinds
+## Interface: 60100
+## Title: |cffff7d0aPrimalBinds|r
 ## Notes: Macros. Wrapped into an AddOn (and some fancy stuff).
+## Dependencies:
 ## OptionalDeps: Bartender4
 ## Author: meribold
 ## Version: 0.1
-## SavedVariables: NinjaKittyBindsDB
+## SavedVariables: PrimalBindsDB
 
 PrimalBinds.lua
