@@ -26,25 +26,25 @@
 -- [@target] stops some abilities from auto-acquiring a target.  It does not stop them from dropping a friendly to
 -- acquire a hostile one.
 
+---- FIXME -------------------------------------------------------------------------------------------------------------
+-- There is a bug where the "V" macro doesn't acquire a target sometimes. This happens even though we don't have a
+--   harmful target and there is an enemy player.  It seems to happen with, e.g. prowling Restoration Druids.
+
 ---- TODO --------------------------------------------------------------------------------------------------------------
--- Berserk should be usable while Incarnation isn't active.
 -- Do something clever about Glyph of the Stag.
 -- Make vehicle binds work when Bartender isn't loaded.
--- Bind mouseover roots.
 -- Bind @arena[123] Rake?
--- Add /startattack to binds that normally start auto-attack except when there's not enough energy.
+-- Add /startattack to all binds that normally start auto-attack except when there's not enough energy.
 -- Bind Rejuvenation and Healing Touch to SHIFT-[456] and Cenarion Ward to ALT-[456].  Healing Touch with modifier
 --   because most finishers use it?
--- Self dispel is rarely used.
--- Bind @target Entangling roots to stop pets from interrupting drinking etc.
+-- Self dispel is rarely used; it could be bound to something worse than Y.
+-- Bind @target Entangling roots to stop pets from interrupting drinking etc?
 -- Bind /tar arena[123] on mouse and switch those binds to other targeting functions (/targetenemyplayer?
 --   /targetfriendplayer?) outside arena.
 -- Kick on ASD?
 -- Maybe the normal Rake bind shouldn't auto-target; accidently used it on a resto druid after his shadow priest guised.
 -- Make the addon work for all classes, binding only the canonical stuff for other classes.
--- Wild Charge on ALT-D etc.?
--- Always use character specific binding set?
--- Add /mountspeical to Savage Roar macros?  This animation is now played by default when using Savage Roar.
+-- The main Wild Charge macro should auto-target.
 
 local addonName, addon = ...
 addon._G = _G
@@ -106,14 +106,36 @@ local macros = {
   { key = "3", specs = { [103] = true },
     init = function(self)
       self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("*macrotext1", -- Used when Incarnation isn't active (Prowl's spell ID is 5215).
+
+      -- Used when Incarnation isn't active (Prowl's spell ID is 5215).
+      self.button:SetAttribute("*macrotext1",
+        -- Consider this: "/castsequence reset=180 Incarnation: King of the Jungle,Berserk".  This cast sequence will
+        -- reset after using Berserk but won't reliably reset 180 seconds after using Incarnation.  The problem is that
+        -- failed attempts to use Berserk will reset the timer.  E.g., when Berserk is on cooldown or while in caster
+        -- form running the macro will reset the timer.  The latter may be fixed by using the [form:2] conditional (not
+        -- really: the cast sequence won't be advanced).  Adding a second line that simply uses Incarnation will make
+        -- sure Incarnation is always used (this also works while Berserk is on cooldown because it is off the GCD).
+        -- However, it may still use Berserk when it should only use Incarnation.
+        --[[
+        "/castsequence reset=180 Incarnation: King of the Jungle,Berserk"
+        --]]
+        -- This version requires shifting out of form first when Incarnation should be used.
+        --[[
+        "/use [form:2]14\n" ..
+        "/use [form:2]Berserk\n" ..
+        "/use [form:2]Berserking\n" ..
+        "/use Incarnation: King of the Jungle"
+        --]]
         "/use Incarnation: King of the Jungle"
       )
-      self.button:SetAttribute("*macrotext2", -- Used when Incarnation is active (Prowl's spell ID is 102547).
+
+      -- Used when Incarnation is active (Prowl's spell ID is 102547).
+      self.button:SetAttribute("*macrotext2",
         "/use 14\n" ..
         "/use Berserk\n" ..
         "/use Berserking"
       )
+
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         local spellId = select(2, GetActionInfo(owner:GetAttribute("prowlActionSlot")))
         if spellId == 5215 then
@@ -127,16 +149,7 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  { key = "SHIFT-3", command = "DONOTHING" },
-  -- TODO: why do I even have this binding?
-  --[[
-  { key = "SHIFT-3", text =
-      "/use Incarnation: King of the Jungle\n" ..
-      "/use 14\n" ..
-      "/use Berserk\n" ..
-      "/use Berserking",
-  },
-  ]]
+  { key = "SHIFT-3", command = "DONOTHING" }, -- TODO: bind something here.
   { key = "ALT-3",
     init = function(self)
       -- Things I've tried that don't work. These two approaches don't work at all:
@@ -292,13 +305,13 @@ local macros = {
   },
   { -- TODO: Fix all the ress macros. [dead] seems to correspond to UnitIsDeadOrGhost().
     key = "4", text =
-      "/use [@mouseover,help,dead]Rebirth;[@mouseover,help]Healing Touch;[help,dead]Rebirth;[help]Healing Touch;" ..
+      "/use [@mouseover,help,dead]Revive;[@mouseover,help]Healing Touch;[help,dead]Revive;[help]Healing Touch;" ..
         "[@player]Healing Touch",
   },
   { key = "SHIFT-4",
     update = function(self)
       self.button:SetAttribute("*macrotext1",
-        "/use [@" .. db.party1 .. ",help,dead]Rebirth;[@" .. db.party1 .. ",help]Healing Touch"
+        "/use [@" .. db.party1 .. ",help,dead]Revive;[@" .. db.party1 .. ",help]Healing Touch"
       )
     end,
   },
@@ -311,7 +324,7 @@ local macros = {
         if not self:GetAttribute("party1") or self:GetAttribute("party1") ~= owner:GetAttribute("party1") then
           local party1 = owner:GetAttribute("party1")
           self:SetAttribute("party1", party1)
-          local text = "/use [@" .. party1 .. ",help,dead]Rebirth;[@" .. party1 .. ",help]Healing Touch"
+          local text = "/use [@" .. party1 .. ",help,dead]Revive;[@" .. party1 .. ",help]Healing Touch"
           self:SetAttribute("*macrotext1", text)
         end
       ]])
@@ -328,14 +341,14 @@ local macros = {
   },
   { key = "5", text =
       "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [@mouseover,help,dead]Revive;[@mouseover,help]Rejuvenation;[help,dead]Revive;[help]Rejuvenation;" ..
+      "/use [@mouseover,help,dead]Rebirth;[@mouseover,help]Rejuvenation;[help,dead]Rebirth;[help]Rejuvenation;" ..
         "[@player]Rejuvenation",
   },
   { key = "SHIFT-5",
     update = function(self)
       self.button:SetAttribute("*macrotext1",
         "/use [form:1]Frenzied Regeneration\n" ..
-        "/use [@" .. db.party1 .. ",help,dead]Revive;[@" .. db.party1 .. ",help]Rejuvenation"
+        "/use [@" .. db.party1 .. ",help,dead]Rebirth;[@" .. db.party1 .. ",help]Rejuvenation"
       )
     end,
   },
@@ -343,7 +356,7 @@ local macros = {
     update = function(self)
       self.button:SetAttribute("*macrotext1",
         "/use [form:1]Frenzied Regeneration\n" ..
-        "/use [@" .. db.party2 .. ",help,dead]Revive;[@" .. db.party2 .. ",help]Rejuvenation"
+        "/use [@" .. db.party2 .. ",help,dead]Rebirth;[@" .. db.party2 .. ",help]Rejuvenation"
       )
     end,
   },
@@ -409,24 +422,41 @@ local macros = {
       end
     end,
   },
-  { key = "ALT-Q", command = "DONOTHING" },
+  { key = "ALT-Q", text =
+      "/use [form:2]14\n" ..
+      "/use [form:2]Berserk\n" ..
+      "/use [form:2]Berserking",
+  },
   { key = "CTRL-Q", command = "DONOTHING" },
   { key = "W", text =
       "/use Survival Instincts"
   },
-  { key = "SHIFT-W",text =
-      "/tar arena1\n" ..
-      "/stopattack",
+  { key = "SHIFT-W",
+    update = function(self)
+      if in3v3Arena() then
+        self.button:SetAttribute("*macrotext1",
+          "/use [@arena1]Faerie Fire\n" ..
+          "/use [@arena1]Faerie Swarm"
+        )
+      else
+        self.button:SetAttribute("*macrotext1",
+          "/use Faerie Fire\n" ..
+          "/use Faerie Swarm"
+        )
+      end
+    end,
   },
   { key = "ALT-W",
     update = function(self)
       if in3v3Arena() then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena1,form:1/2]Wild Charge"
+          "/use [@arena1]Faerie Fire\n" ..
+          "/use [@arena1]Faerie Swarm"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [form:1/2]Wild Charge"
+          "/use Faerie Fire\n" ..
+          "/use Faerie Swarm"
         )
       end
     end,
@@ -483,13 +513,13 @@ local macros = {
     update = function(self)
       if in3v3Arena() then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena1]Faerie Fire\n" ..
-          "/use [@arena1]Faerie Swarm"
+          --"/use [@arena1,form:1/2]Wild Charge"
+          "/castsequence [@arena1,form:1/2]reset=1 Wild Charge,Skull Bash"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use Faerie Fire\n" ..
-          "/use Faerie Swarm"
+          --"/use [form:1/2]Wild Charge"
+          "/castsequence [form:1/2]reset=1 Wild Charge,Skull Bash"
         )
       end
     end,
@@ -586,8 +616,7 @@ local macros = {
   { key = "A", text =
       "/use [form:1]Frenzied Regeneration\n" ..
       "/cancelform [form]\n" ..
-      "/dismount [mounted]\n" ..
-      "/stopcasting",
+      "/dismount [mounted]\n",
   },
   { key = "SHIFT-A",
     update = function(self)
@@ -647,19 +676,32 @@ local macros = {
     end,
   },
   --]=]
-  { key = "SHIFT-S",text =
-      "/tar arena2\n" ..
-      "/stopattack",
+  { key = "SHIFT-S",
+    update = function(self)
+      if in3v3Arena() then
+        self.button:SetAttribute("*macrotext1",
+          "/use [@arena2]Faerie Fire\n" ..
+          "/use [@arena2]Faerie Swarm"
+        )
+      else
+        self.button:SetAttribute("*macrotext1",
+          "/use [@focus,exists]Faerie Fire\n" ..
+          "/use [@focus,exists]Faerie Swarm"
+        )
+      end
+    end,
   },
   { key = "ALT-S",
     update = function(self)
       if in3v3Arena() then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena2,form:1/2]Wild Charge"
+          "/use [@arena2]Faerie Fire\n" ..
+          "/use [@arena2]Faerie Swarm"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus,exists,form:1/2]Wild Charge"
+          "/use [@focus,exists]Faerie Fire\n" ..
+          "/use [@focus,exists]Faerie Swarm"
         )
       end
     end,
@@ -718,13 +760,13 @@ local macros = {
     update = function(self)
       if in3v3Arena() then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena2]Faerie Fire\n" ..
-          "/use [@arena2]Faerie Swarm"
+          --"/use [@arena2,form:1/2]Wild Charge"
+          "/castsequence [@arena2,form:1/2]reset=1 Wild Charge,Skull Bash"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus,exists]Faerie Fire\n" ..
-          "/use [@focus,exists]Faerie Swarm"
+          --"/use [@focus,exists,form:1/2]Wild Charge"
+          "/castsequence [@focus,exists,form:1/2]reset=1 Wild Charge,Skull Bash"
         )
       end
     end,
@@ -942,9 +984,20 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  { key = "SHIFT-X",text =
-      "/tar arena3\n" ..
-      "/stopattack",
+  { key = "SHIFT-X",
+    update = function(self)
+      if in3v3Arena() then
+        self.button:SetAttribute("*macrotext1",
+          "/use [@arena3]Faerie Fire\n" ..
+          "/use [@arena3]Faerie Swarm"
+        )
+      else
+        self.button:SetAttribute("*macrotext1",
+          "/use [@focus]Faerie Fire\n" ..
+          "/use [@focus]Faerie Swarm"
+        )
+      end
+    end,
   },
   --[[
   { key = "SHIFT-X", specs = { [103] = true },
@@ -980,11 +1033,13 @@ local macros = {
     update = function(self)
       if in3v3Arena() then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena3,form:1/2]Wild Charge"
+          "/use [@arena3]Faerie Fire\n" ..
+          "/use [@arena3]Faerie Swarm"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus,form:1/2]Wild Charge"
+          "/use [@focus]Faerie Fire\n" ..
+          "/use [@focus]Faerie Swarm"
         )
       end
     end,
@@ -1029,13 +1084,13 @@ local macros = {
     update = function(self)
       if in3v3Arena() then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena3]Faerie Fire\n" ..
-          "/use [@arena3]Faerie Swarm"
+          --"/use [@arena3,form:1/2]Wild Charge"
+          "/castsequence [@arena3,form:1/2]reset=1 Wild Charge,Skull Bash"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Faerie Fire\n" ..
-          "/use [@focus]Faerie Swarm"
+          --"/use [@focus,form:1/2]Wild Charge"
+          "/castsequence [@focus,form:1/2]reset=1 Wild Charge,Skull Bash"
         )
       end
     end,
@@ -1202,12 +1257,14 @@ local macros = {
     update = function(self)
       if in3v3Arena() then
         self.button:SetAttribute("*macrotext1",
+          "/use [@mouseover,exists]Cyclone\n" ..
+          "/stopmacro [@mouseover,exists]\n" ..
           "/tar arena1\n" ..
           "/stopattack"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/focus [@mouseover,exists]\n" ..
+          "/use [@mouseover,exists]Cyclone\n" ..
           "/targetenemyplayer [@mouseover,noexists]"
         )
       end
@@ -1293,12 +1350,14 @@ local macros = {
     update = function(self)
       if in3v3Arena() then
         self.button:SetAttribute("*macrotext1",
+          "/use [@mouseover,exists]Entangling Roots\n" ..
+          "/stopmacro [@mouseover,exists]\n" ..
           "/tar arena3\n" ..
           "/stopattack"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/focus [@mouseover,exists]\n" ..
+          "/use [@mouseover,exists]Entangling Roots\n" ..
           "/targetenemy [@mouseover,noexists]"
         )
       end
@@ -1408,13 +1467,13 @@ local macros = {
       "/cancelaura [form:1/2]Hand of Protection\n" ..
       "/use [noform:1/2]Cat Form;[@arena3]Skull Bash",
   },
-  { key = "NUMPAD6",text =
+  { key = "NUMPAD6", text =
       "/tar arena1",
   },
-  { key = "NUMPAD5",text =
+  { key = "NUMPAD5", text =
       "/tar arena2",
   },
-  { key = "NUMPAD4",text =
+  { key = "NUMPAD4", text =
       "/tar arena3",
   },
   --]]
