@@ -24,7 +24,7 @@
 -- As of patch 6.0.2, this pattern does not work anymore: "/castsequence 0,Cat Form".  Cat Form will never be used.
 
 -- [@target] stops some abilities from auto-acquiring a target.  It does not stop them from dropping a friendly to
--- acquire a hostile one.
+-- acquire a hostile one, though.  This makes [harm] preferable I guess.
 
 ---- FIXME -------------------------------------------------------------------------------------------------------------
 -- There is a bug where the "V" macro doesn't acquire a target sometimes. This happens even though we don't have a
@@ -48,6 +48,7 @@
 
 local addonName, addon = ...
 addon._G = _G
+_G[addonName] = addon
 setfenv(1, addon)
 
 print = function(...)
@@ -303,20 +304,18 @@ local macros = {
       "/dismount",
     --]]
   },
-  { -- TODO: Fix all the ress macros. [dead] seems to correspond to UnitIsDeadOrGhost().
-    key = "4", text =
-      "/use [@mouseover,help,dead]Revive;[@mouseover,help]Healing Touch;[help,dead]Revive;[help]Healing Touch;" ..
+  { key = "4", text =
+      "/use [form:1]Frenzied Regeneration\n" ..
+      "/use [@mouseover,help,dead]Revive;[@mouseover,help]Rejuvenation;[help,dead]Revive;[help]Rejuvenation;" ..
+        "[@player]Rejuvenation",
+  },
+  { -- TODO: Fix all the ress macros.  The [dead] macro conditional seems to correspond to UnitIsDeadOrGhost().
+    key = "SHIFT-4", text =
+      "/use [@mouseover,help,dead]Rebirth;[@mouseover,help]Healing Touch;[help,dead]Rebirth;[help]Healing Touch;" ..
         "[@player]Healing Touch",
   },
-  { key = "SHIFT-4",
-    update = function(self)
-      self.button:SetAttribute("*macrotext1",
-        "/use [@" .. db.party1 .. ",help,dead]Revive;[@" .. db.party1 .. ",help]Healing Touch"
-      )
-    end,
-  },
   --[=[
-  { -- This would be nice, but we can't get the name of a targeted party or raid member from a restricted environment.
+  { -- This would be nice, but we can't get the name of a targeted party or raid member from the restricted environment.
     key = "SHIFT-4",
     init = function(self)
       self.button:SetAttribute("type", "macro")
@@ -332,44 +331,46 @@ local macros = {
     end,
   },
   ]=]
-  { key = "ALT-4",
+  { key = "ALT-4", text =
+      "/use Heart of the Wild\n" ..
+      "/use Renewal\n" ..
+      "/use [@mouseover,help,nodead][help,nodead][@player]Cenarion Ward",
+  },
+  { key = "5",
     update = function(self)
       self.button:SetAttribute("*macrotext1",
-        "/use [@" .. db.party2 .. ",help,dead]Rebirth;[@" .. db.party2 .. ",help]Healing Touch"
+        "/use [form:1]Frenzied Regeneration\n" ..
+        "/use [@" .. db.party1 .. ",help,dead]Revive;[@" .. db.party1 .. ",help]Rejuvenation"
       )
     end,
-  },
-  { key = "5", text =
-      "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [@mouseover,help,dead]Rebirth;[@mouseover,help]Rejuvenation;[help,dead]Rebirth;[help]Rejuvenation;" ..
-        "[@player]Rejuvenation",
   },
   { key = "SHIFT-5",
     update = function(self)
       self.button:SetAttribute("*macrotext1",
-        "/use [form:1]Frenzied Regeneration\n" ..
-        "/use [@" .. db.party1 .. ",help,dead]Rebirth;[@" .. db.party1 .. ",help]Rejuvenation"
+        "/use [@" .. db.party1 .. ",help,dead]Rebirth;[@" .. db.party1 .. ",help]Healing Touch"
       )
     end,
   },
   { key = "ALT-5",
     update = function(self)
       self.button:SetAttribute("*macrotext1",
-        "/use [form:1]Frenzied Regeneration\n" ..
-        "/use [@" .. db.party2 .. ",help,dead]Rebirth;[@" .. db.party2 .. ",help]Rejuvenation"
+        "/use [@" .. db.party1 .. ",help]Heart of the Wild\n" ..
+        "/use [@" .. db.party1 .. ",help]Cenarion Ward"
       )
     end,
   },
-  { key = "6", text =
-      "/use Heart of the Wild\n" ..
-      "/use Renewal\n" ..
-      "/use [@mouseover,help,nodead][help,nodead][@player]Cenarion Ward",
+  { key = "6",
+    update = function(self)
+      self.button:SetAttribute("*macrotext1",
+        "/use [form:1]Frenzied Regeneration\n" ..
+        "/use [@" .. db.party2 .. ",help,dead]Revive;[@" .. db.party2 .. ",help]Rejuvenation"
+      )
+    end,
   },
   { key = "SHIFT-6",
     update = function(self)
       self.button:SetAttribute("*macrotext1",
-        "/use [@" .. db.party1 .. ",help]Heart of the Wild\n" ..
-        "/use [@" .. db.party1 .. ",help]Cenarion Ward"
+        "/use [@" .. db.party2 .. ",help,dead]Rebirth;[@" .. db.party2 .. ",help]Healing Touch"
       )
     end,
   },
@@ -446,21 +447,7 @@ local macros = {
       end
     end,
   },
-  { key = "ALT-W",
-    update = function(self)
-      if in3v3Arena() then
-        self.button:SetAttribute("*macrotext1",
-          "/use [@arena1]Faerie Fire\n" ..
-          "/use [@arena1]Faerie Swarm"
-        )
-      else
-        self.button:SetAttribute("*macrotext1",
-          "/use Faerie Fire\n" ..
-          "/use Faerie Swarm"
-        )
-      end
-    end,
-  },
+  { key = "ALT-W", command = "DONOTHING" }, -- TODO: bind something here.
   --[[
   { key = "E",
     update = function(self)
@@ -557,10 +544,10 @@ local macros = {
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@target]Maim"
+          "/use [harm]Maim"
         )
         self.button:SetAttribute("*macrotext2",
-          "/use [@target]Rake"
+          "/use [harm]Rake"
         )
       end
     end,
@@ -691,21 +678,7 @@ local macros = {
       end
     end,
   },
-  { key = "ALT-S",
-    update = function(self)
-      if in3v3Arena() then
-        self.button:SetAttribute("*macrotext1",
-          "/use [@arena2]Faerie Fire\n" ..
-          "/use [@arena2]Faerie Swarm"
-        )
-      else
-        self.button:SetAttribute("*macrotext1",
-          "/use [@focus,exists]Faerie Fire\n" ..
-          "/use [@focus,exists]Faerie Swarm"
-        )
-      end
-    end,
-  },
+  { key = "ALT-S", command = "DONOTHING" }, -- TODO: bind something here.
   --[[
   { key = "D",
     update = function(self)
@@ -778,31 +751,30 @@ local macros = {
       self.button:SetAttribute("*macrotext1", -- Used when [noform:1/2].
         "/use Cat Form"
       )
-      self.button:SetAttribute("*macrotext2", -- Used when [harm,form:2].
+      self.button:SetAttribute("*macrotext2", -- Used when [form:2,nostealth][harm,form:2,nostealth].
         "/stopattack [stealth]\n" ..
-        "/use [@mouseover,harm][]Shred\n" ..
+        "/use [@mouseover,harm][harm]Shred\n" ..
         "/stopattack [stealth]\n" ..
-        "/startattack [nostealth]"
+        "/startattack [harm,nostealth]"
       )
-      self.button:SetAttribute("*macrotext3", -- Used when [noexists,form:2][noharm,form:2].
+      self.button:SetAttribute("*macrotext3", -- Used when [noexists,form:2,stealth][noharm,form:2,stealth].
         "/use [@mouseover,harm]Shred\n" ..
         "/stopmacro [@mouseover,harm]\n" ..
         "/targetenemyplayer [stealth]\n" ..
+        "/tar [noexists]player\n" ..
         "/stopmacro [noexists][noharm]\n" ..
-        "/use [harm]Shred\n" ..
-        --"/cleartarget"
+        "/use Shred\n" ..
         "/tar player"
       )
       self.button:SetAttribute("*macrotext4", -- Used when [form:1].
-        "/use [@mouseover,harm][]Mangle"
+        "/use [@mouseover,harm][harm]Mangle\n" ..
+        "/tar [noexists]player"
       )
-      -- Our snippets get these arguments: self, button, down. See
-      -- "http://wowprogramming.com/utils/xmlbrowser/live/FrameXML/SecureTemplates.lua" and "Iriel’s Field Guide to
-      -- Secure Handlers".
+      -- Our snippets get these arguments: self, button, down. See wowprogramming.com/utils/xmlbrowser/test/FrameXML/
+      -- SecureTemplates.lua and "Iriel's Field Guide to Secure Handlers".
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
-        --local spellId = select(2, GetActionInfo(owner:GetAttribute("prowlActionSlot")))
         if GetBonusBarOffset() == 1 then
-          if UnitExists("target") and PlayerCanAttack("target") then
+          if not IsStealthed() or UnitExists("target") and PlayerCanAttack("target") then
             return "RightButton"
           else
             return "MiddleButton"
@@ -867,24 +839,27 @@ local macros = {
   { key = "G",
     init = function(self)
       self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("*macrotext1", -- Used when [harm].
+      self.button:SetAttribute("*macrotext1", -- Used when [harm][nostealth].
         "/use Incapacitating Roar\n" ..
         "/use Ursol's Vortex\n" ..
-        "/use [@mouseover,harm][]Mighty Bash"
+        "/stopmacro [notalent:5/3]\n" ..
+        "/tar [noexists]player\n" ..
+        "/use [@mouseover,harm][harm]Mighty Bash"
       )
-      self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm].
+      self.button:SetAttribute("*macrotext2", -- Used when [noexists,stealth][noharm,stealth].
         "/use Incapacitating Roar\n" ..
         "/use Ursol's Vortex\n" ..
+        "/stopmacro [notalent:5/3]\n" ..
         "/use [@mouseover,harm]Mighty Bash\n" ..
         "/stopmacro [@mouseover,harm]\n" ..
         "/targetenemyplayer [stealth]\n" ..
+        "/tar [noexists]player\n" ..
         "/stopmacro [noexists][noharm]\n" ..
         "/use Mighty Bash\n" ..
-        --"/cleartarget"
         "/tar player"
       )
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
-        if not UnitExists("target") or not PlayerCanAttack("target") then
+        if IsStealthed() and (not UnitExists("target") or not PlayerCanAttack("target")) then
           return "RightButton"
         end
       ]])
@@ -1029,21 +1004,7 @@ local macros = {
     end,
   },
   ]]
-  { key = "ALT-X",
-    update = function(self)
-      if in3v3Arena() then
-        self.button:SetAttribute("*macrotext1",
-          "/use [@arena3]Faerie Fire\n" ..
-          "/use [@arena3]Faerie Swarm"
-        )
-      else
-        self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Faerie Fire\n" ..
-          "/use [@focus]Faerie Swarm"
-        )
-      end
-    end,
-  },
+  { key = "ALT-X", command = "DONOTHING" }, -- TODO: bind something here.
   --[[
   { key = "C",
     update = function(self)
@@ -1098,20 +1059,20 @@ local macros = {
   { key = "V",
     init = function(self)
       self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("*macrotext1", -- Used when [harm].
+      self.button:SetAttribute("*macrotext1", -- Used when [form:2,harm][form:2,nostealth].
         "/stopattack [stealth]\n" ..
-        "/use [@mouseover,harm][]Rake\n" ..
-        "/stopattack [stealth]\n" ..  -- Rake (and Shred) will start auto-attack even when used in stealth :/
-        "/startattack [nostealth]"    -- Also start auto-attack when there's not enough energy.
+        "/use [@mouseover,harm][harm]Rake\n" ..
+        "/stopattack [stealth]\n" ..    -- Rake (and Shred) will start auto-attack even when used in stealth :/
+        "/startattack [harm,nostealth]" -- Also start auto-attack when there's not enough energy.
       )
-      self.button:SetAttribute("*macrotext2", -- Used when [noexists][noharm] (should imply we aren't auto-attacking).
-        "/use [@mouseover,harm]Rake\n" ..
+      self.button:SetAttribute("*macrotext2", -- Used when [noexists,form:2,stealth][noharm,form:2,stealth] (should
+        "/use [@mouseover,harm]Rake\n" ..     -- implay we aren't auto-attacking).
         "/stopmacro [@mouseover,harm]\n" ..
         "/targetenemyplayer [stealth]\n" ..
+        "/tar [noexists]player\n" ..
         "/stopmacro [noexists][noharm]\n" ..
         "/use Rake\n" ..
         "/stopattack [stealth]\n" ..
-        --"/cleartarget"
         "/tar player"
       )
       self.button:SetAttribute("*macrotext3", -- Used when [noform:2].
@@ -1121,7 +1082,7 @@ local macros = {
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
         if GetBonusBarOffset() ~= 1 then
           return "MiddleButton"
-        elseif not UnitExists("target") or not PlayerCanAttack("target") then
+        elseif IsStealthed() and (not UnitExists("target") or not PlayerCanAttack("target")) then
           return "RightButton"
         end
       ]])
