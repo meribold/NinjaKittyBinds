@@ -26,11 +26,32 @@
 -- [@target] stops some abilities from auto-acquiring a target.  It does not stop them from dropping a friendly to
 -- acquire a hostile one, though.  This makes [harm] preferable I guess.
 
+-- From #moonglade on irc.quakenet.org:
+--   <meribold> do you macro potions to anything or use them manually all the time?
+--   <aggixx> manually all the time
+--   <meribold> not really used to potions
+--   <meribold> i guess i could keybind it to something like arena3 cyclone, that i'm not going to need outside of arena
+--   <meribold> so i don't need a new keybind
+--   <aggixx> yeah
+--   <meribold> Bottomless Brawler's Draenic Agility Potion, Brawler's Draenic Agility Potion, Draenic Agility Potion:
+--     are those the potions I should all put into one macro?
+--   <bunnykillax> should just have bottomless
+--   <bunnykillax> dont need both brawlers
+--   <meribold> but i'll use it for different chars and some of them don't have access to it
+--   <meribold> so it should just try to use bottomless first, than fall back to brawlers and finally fall back to
+--     Draenic Agility Potion
+--   <meribold> I guess
+--   <aggixx> yeah that works I guess, never thought of doing that
+--   <aggixx> I always just swapped the item on my actionbar
+
 ---- FIXME -------------------------------------------------------------------------------------------------------------
 -- There is a bug where the "V" macro doesn't acquire a target sometimes. This happens even though we don't have a
 --   harmful target and there is an enemy player.  It seems to happen with, e.g. prowling Restoration Druids.
+-- Some [@mouseover] macros are bound with modifiers.  That makes them almost unusable.
 
 ---- TODO --------------------------------------------------------------------------------------------------------------
+-- Bind [@mouseover] Mark of the Wild.
+-- Both [@player] and [@pary1] binds should try [@mouseover,exists] first.
 -- Do something clever about Glyph of the Stag.
 -- Make vehicle binds work when Bartender isn't loaded.
 -- Bind @arena[123] Rake?
@@ -60,13 +81,16 @@ _G["BINDING_NAME_DONOTHING"]     = "Do Nothing"
 
 local secureHeader = _G.CreateFrame("Frame", nil, _G.UIParent, "SecureHandlerBaseTemplate")
 
+--[[
 local function inArena()
   return (_G.select(2, _G.IsInInstance())) == "arena"
 end
+]]
 
--- Also returns true for 2v2 arena.
-local function in3v3Arena()
-  return inArena() and not _G.UnitExists("party3") and _G.GetNumArenaOpponentSpecs() <= 5
+-- Also returns true for 2v2 arena.  Doesn't return true for 5v5 arena.
+local function inArena()
+  return (_G.select(2, _G.IsInInstance())) == "arena" and not _G.UnitExists("party3")
+    and _G.GetNumArenaOpponentSpecs() <= 5
 end
 
 ---- < MACROS > --------------------------------------------------------------------------------------------------------
@@ -90,9 +114,9 @@ local macros = {
   { key = "2", text =
       "/use Nature's Vigil",
   },
-  -- TODO: bind something more common to shift-2.
   { key = "SHIFT-2", text =
-      "/use Healthstone"
+      "/use Renewal\n" ..
+      "/use [notalent:2/2]Healthstone"
   },
   { key = "ALT-2", text =
       "/cancelaura Hand of Protection\n" ..
@@ -304,6 +328,7 @@ local macros = {
       "/dismount",
     --]]
   },
+  -- FIXME: why not "[help][@player]Rejuvenation" at the end instead?
   { key = "4", text =
       "/use [form:1]Frenzied Regeneration\n" ..
       "/use [@mouseover,help,dead]Revive;[@mouseover,help]Rejuvenation;[help,dead]Revive;[help]Rejuvenation;" ..
@@ -333,7 +358,7 @@ local macros = {
   ]=]
   { key = "ALT-4", text =
       "/use Heart of the Wild\n" ..
-      "/use Renewal\n" ..
+      "/use Healthstone\n" ..
       "/use [@mouseover,help,nodead][help,nodead][@player]Cenarion Ward",
   },
   { key = "5",
@@ -412,7 +437,7 @@ local macros = {
   { key = "Q", text = "/use 13" },
   { key = "SHIFT-Q",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/use [@arena1]Soothe"
         )
@@ -434,7 +459,7 @@ local macros = {
   },
   { key = "SHIFT-W",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/use [@arena1]Faerie Fire\n" ..
           "/use [@arena1]Faerie Swarm"
@@ -447,37 +472,23 @@ local macros = {
       end
     end,
   },
-  { key = "ALT-W", command = "DONOTHING" }, -- TODO: bind something here.
-  --[[
-  { key = "E",
-    update = function(self)
-      if in3v3Arena() then
-        self.button:SetAttribute("*macrotext1",
-          "/tar arena1"
-        )
-      else
-        self.button:SetAttribute("*macrotext1",
-          "/tar [@mouseover,exists]\n" ..
-          "/targetenemy [@mouseover,noexists]"
-        )
-      end
-    end,
+  { key = "ALT-W", text =
+      "/use [help,nodead][@player]Antiseptic Bandage",
   },
-  --]]
   ----[[
   { key = "E",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/stopcasting [form:1/2]\n" ..
           "/cancelaura [form:1/2]Hand of Protection\n" ..
-          "/use [noform:1/2]Cat Form;[@arena1]Skull Bash"
+          "/use [noform:1/2]Cat Form;[@mouseover,harm][@arena1]Skull Bash"
         )
       else
         self.button:SetAttribute("*macrotext1",
           "/stopcasting [form:1/2]\n" ..
           "/cancelaura [form:1/2]Hand of Protection\n" ..
-          "/use [noform:1/2]Cat Form;Skull Bash"
+          "/use [noform:1/2]Cat Form;[@mouseover,harm][]Skull Bash"
         )
       end
     end,
@@ -485,7 +496,7 @@ local macros = {
   --]]
   { key = "SHIFT-E",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/use [@arena1]Cyclone"
         )
@@ -498,7 +509,7 @@ local macros = {
   },
   { key = "ALT-E",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           --"/use [@arena1,form:1/2]Wild Charge"
           "/castsequence [@arena1,form:1/2]reset=1 Wild Charge,Skull Bash"
@@ -517,7 +528,8 @@ local macros = {
   },
   { key = "SHIFT-R", specs = { [103] = true }, text =
       "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [noform:2]Cat Form;Savage Roar",
+      "/use [noform:2]Cat Form;Savage Roar\n" ..
+      "/mountspecial",
   },
   { key = "ALT-R",
     init = function(self)
@@ -535,7 +547,7 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1", -- Used when Incarnation isn't active.
           "/use [@arena1]Maim"
         )
@@ -559,7 +571,7 @@ local macros = {
   },
   { key = "SHIFT-T",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/use [@arena1]Entangling Roots"
         )
@@ -572,7 +584,7 @@ local macros = {
   },
   { key = "ALT-T",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/use [@arena1]Mighty Bash"
         )
@@ -593,9 +605,21 @@ local macros = {
   { key = "ALT-Y", text =
       "/use Hurricane",
   },
-  { key = "ESCAPE", text =
-      "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [form:1]!Bear Form;[form:2]!Cat Form;[form:3][swimming]!Travel Form;!Cat Form",
+  { key = "ESCAPE",
+    init = function(self)
+      self.button:SetAttribute("type", "macro")
+      self.button:SetAttribute("*macrotext1", -- Used when [nocanexitvehicle]
+        "/use [form:1]Frenzied Regeneration\n" ..
+        "/use [form:1]!Bear Form;[form:2]!Cat Form;[form:3][swimming]!Travel Form;!Cat Form"
+      )
+      self.button:SetAttribute("*macrotext2", -- Used when [canexitvehicle]
+        "/leavevehicle"
+      )
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
+        return SecureCmdOptionParse("[canexitvehicle]RightButton;LeftButton")
+      ]])
+      self.button:RegisterForClicks("AnyDown")
+    end
   },
   { key = "SHIFT-ESCAPE", command = "DONOTHING" },
   { key = "ALT-ESCAPE", command = "DONOTHING" },
@@ -607,7 +631,7 @@ local macros = {
   },
   { key = "SHIFT-A",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/use [@arena2]Soothe"
         )
@@ -665,7 +689,7 @@ local macros = {
   --]=]
   { key = "SHIFT-S",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/use [@arena2]Faerie Fire\n" ..
           "/use [@arena2]Faerie Swarm"
@@ -678,27 +702,16 @@ local macros = {
       end
     end,
   },
-  { key = "ALT-S", command = "DONOTHING" }, -- TODO: bind something here.
-  --[[
-  { key = "D",
+  { key = "ALT-S",
     update = function(self)
-      if in3v3Arena() then
-        self.button:SetAttribute("*macrotext1",
-          "/tar arena2"
-        )
-      else
-        self.button:SetAttribute("*macrotext1",
-          "/tar [@mouseover,exists]\n" ..
-          "/targetenemyplayer [@mouseover,noexists]"
-        )
-      end
+      self.button:SetAttribute("*macrotext1",
+        "/use [@" .. db.party1 .. ",help]Antiseptic Bandage"
+      )
     end,
   },
-  --]]
-  ----[[
   { key = "D",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/stopcasting [form:1/2]\n" ..
           "/cancelaura [form:1/2]Hand of Protection\n" ..
@@ -715,10 +728,9 @@ local macros = {
       end
     end,
   },
-  --]]
   { key = "SHIFT-D",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/use [@arena2]Cyclone"
         )
@@ -731,7 +743,7 @@ local macros = {
   },
   { key = "ALT-D",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           --"/use [@arena2,form:1/2]Wild Charge"
           "/castsequence [@arena2,form:1/2]reset=1 Wild Charge,Skull Bash"
@@ -819,7 +831,7 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/use [@arena2]Maim"
         )
@@ -868,7 +880,7 @@ local macros = {
   },
   { key = "SHIFT-G",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/use [@arena2]Entangling Roots"
         )
@@ -881,7 +893,7 @@ local macros = {
   },
   { key = "ALT-G",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/use [@arena2]Mighty Bash"
         )
@@ -896,7 +908,7 @@ local macros = {
     update = function(self)
       self.button:SetAttribute("*macrotext1",
         "/use [form:1]Frenzied Regeneration\n" ..
-        "/use [@" .. db.party1 .. ",help]Remove Corruption"
+        "/use [@mouseover,help][@" .. db.party1 .. ",help]Remove Corruption"
       )
     end,
   },
@@ -918,7 +930,7 @@ local macros = {
   },
   { key = "SHIFT-Z",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/use [@arena3]Soothe"
         )
@@ -961,7 +973,7 @@ local macros = {
   },
   { key = "SHIFT-X",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/use [@arena3]Faerie Fire\n" ..
           "/use [@arena3]Faerie Swarm"
@@ -1004,33 +1016,33 @@ local macros = {
     end,
   },
   ]]
-  { key = "ALT-X", command = "DONOTHING" }, -- TODO: bind something here.
-  --[[
+  { key = "ALT-X",
+    update = function(self)
+      self.button:SetAttribute("*macrotext1",
+        "/use [@" .. db.party2 .. ",help]Antiseptic Bandage"
+      )
+    end,
+  },
   { key = "C",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
-          "/tar arena3"
+          "/stopcasting [form:1/2]\n" ..
+          "/cancelaura [form:1/2]Hand of Protection\n" ..
+          "/use [noform:1/2]Cat Form;[@arena3]Skull Bash"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/tar [@mouseover,exists]\n" ..
-          "/targetfriendplayer [@mouseover,noexists]"
+          "/use Brawler's Bottomless Draenic Agility Potion\n" ..
+          "/use Brawler's Draenic Agility Potion\n" ..
+          "/use Draenic Agility Potion"
         )
       end
     end,
   },
-  --]]
-  ----[[
-  { key = "C", text =
-      "/stopcasting [form:1/2]\n" ..
-      "/cancelaura [form:1/2]Hand of Protection\n" ..
-      "/use [noform:1/2]Cat Form;[@arena3]Skull Bash",
-  },
-  --]]
   { key = "SHIFT-C",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/use [@arena3]Cyclone"
         )
@@ -1043,7 +1055,7 @@ local macros = {
   },
   { key = "ALT-C",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           --"/use [@arena3,form:1/2]Wild Charge"
           "/castsequence [@arena3,form:1/2]reset=1 Wild Charge,Skull Bash"
@@ -1121,7 +1133,7 @@ local macros = {
   },
   { key = "SHIFT-B",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/use [@arena3]Entangling Roots"
         )
@@ -1134,7 +1146,7 @@ local macros = {
   },
   { key = "ALT-B",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/use [@arena3]Mighty Bash"
         )
@@ -1197,7 +1209,7 @@ local macros = {
   --[[
   { key = "MOUSEWHEELUP",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/stopcasting [form:1/2]\n" ..
           "/cancelaura [form:1/2]Hand of Protection\n" ..
@@ -1216,17 +1228,17 @@ local macros = {
   ----[[
   { key = "MOUSEWHEELUP",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
-          "/use [@mouseover,exists]Cyclone\n" ..
-          "/stopmacro [@mouseover,exists]\n" ..
+          "/use [@mouseover,harm]Cyclone;[@mouseover,help]Rejuvenation\n" ..
+          "/stopmacro [@mouseover,harm][@mouseover,help]\n" ..
           "/tar arena1\n" ..
           "/stopattack"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@mouseover,exists]Cyclone\n" ..
-          "/targetenemyplayer [@mouseover,noexists]"
+          "/use [@mouseover,harm]Cyclone;[@mouseover,help]Rejuvenation\n" ..
+          "/targetenemyplayer [@mouseover,noharm,nohelp]"
         )
       end
     end,
@@ -1238,7 +1250,7 @@ local macros = {
   --[[
   { key = "BUTTON3",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/stopcasting [form:1/2]\n" ..
           "/cancelaura [form:1/2]Hand of Protection\n" ..
@@ -1257,7 +1269,7 @@ local macros = {
   ----[[
   { key = "BUTTON3",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/tar arena2\n" ..
           "/stopattack"
@@ -1309,17 +1321,17 @@ local macros = {
   ----[[
   { key = "MOUSEWHEELDOWN",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
-          "/use [@mouseover,exists]Entangling Roots\n" ..
-          "/stopmacro [@mouseover,exists]\n" ..
+          "/use [@mouseover,harm]Entangling Roots;[@mouseover,help]Healing Touch\n" ..
+          "/stopmacro [@mouseover,harm][@mouseover,help]\n" ..
           "/tar arena3\n" ..
           "/stopattack"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@mouseover,exists]Entangling Roots\n" ..
-          "/targetenemy [@mouseover,noexists]"
+          "/use [@mouseover,harm]Entangling Roots;[@mouseover,help]Healing Touch\n" ..
+          "/targetenemy [@mouseover,noharm,nohelp]"
         )
       end
     end,
@@ -1345,45 +1357,55 @@ local macros = {
     the last target will clear the target, "/focus [@target,exists]" will do nothing and the last "/targetlasttarget"
     will restore the target.
     ]]
-    key = "BUTTON4", init = function(self)
+    key = "BUTTON4",
+    init = function(self)
       self.button:SetAttribute("type", "macro")
-      self.button:SetAttribute("*macrotext1", -- Used when UnitExists("target") and UnitExists("focus").
-        "/cleartarget\n" ..
-        "/targetlasttarget\n" ..
-        "/tar focus\n" ..
-        "/targetlasttarget\n" ..
-        "/focus [@target,exists]\n" ..
-        "/targetlasttarget"
-      )
-      self.button:SetAttribute("*macrotext2", -- Used when UnitExists("target") and not UnitExists("focus").
-        "/focus\n" ..
-        "/cleartarget"
-      )
-      self.button:SetAttribute("*macrotext3", -- Used when not UnitExists("target") and UnitExists("focus").
-        "/tar focus\n" ..
-        "/clearfocus"
-      )
-      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
-        local macroText = ""
-        if UnitExists("target") then
-          if UnitExists("focus") then
-            -- ...
-          else
-            return "RightButton"
-          end
-        else
-          if UnitExists("focus") then
-            return "MiddleButton"
-          else
-            return false
-          end
-        end
-      ]])
       self.button:RegisterForClicks("AnyDown")
+    end,
+    update = function(self)
+      if inArena() then
+        self.button:SetAttribute("*macrotext1",
+          "/targetenemy"
+        )
+        _G.SecureHandlerUnwrapScript(self.button, "OnClick")
+      else
+        self.button:SetAttribute("*macrotext1", -- Used when UnitExists("target") and UnitExists("focus").
+          "/cleartarget\n" ..
+          "/targetlasttarget\n" ..
+          "/tar focus\n" ..
+          "/targetlasttarget\n" ..
+          "/focus [@target,exists]\n" ..
+          "/targetlasttarget"
+        )
+        self.button:SetAttribute("*macrotext2", -- Used when UnitExists("target") and not UnitExists("focus").
+          "/focus\n" ..
+          "/cleartarget"
+        )
+        self.button:SetAttribute("*macrotext3", -- Used when not UnitExists("target") and UnitExists("focus").
+          "/tar focus\n" ..
+          "/clearfocus"
+        )
+        _G.SecureHandlerUnwrapScript(self.button, "OnClick")
+        _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
+          if UnitExists("target") then
+            if UnitExists("focus") then
+              -- ...
+            else
+              return "RightButton"
+            end
+          else
+            if UnitExists("focus") then
+              return "MiddleButton"
+            else
+              return false
+            end
+          end
+        ]])
+      end
     end,
   },
   { key = "SHIFT-BUTTON4", text = "/focus" },
-  { key = "ALT-BUTTON4", text = "/focus party1" },
+  { key = "ALT-BUTTON4" },
   { key = "BUTTON5", command = "JUMP" },
   { key = "SHIFT-BUTTON5" },
   { key = "ALT-BUTTON5" },
@@ -1391,7 +1413,7 @@ local macros = {
   --[[
   { key = "NUMPAD3",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/stopcasting [form:1/2]\n" ..
           "/cancelaura [form:1/2]Hand of Protection\n" ..
@@ -1408,7 +1430,7 @@ local macros = {
   },
   { key = "NUMPAD2",
     update = function(self)
-      if in3v3Arena() then
+      if inArena() then
         self.button:SetAttribute("*macrotext1",
           "/stopcasting [form:1/2]\n" ..
           "/cancelaura [form:1/2]Hand of Protection\n" ..
@@ -1548,6 +1570,7 @@ function handlerFrame:ADDON_LOADED()
     _G.RegisterStateDriver(overrideBarStateHandler, "overridebar",
       "[overridebar][vehicleui][possessbar][bonusbar:5]overridebar;nooverridebar")
 
+    --[=[
     overrideBarStateHandler:SetAttribute("_onstate-canexitvehicle", [[
       if newstate == "canexitvehicle" then
         self:SetBindingClick(false, "ESCAPE", "BT4Button85")
@@ -1558,6 +1581,7 @@ function handlerFrame:ADDON_LOADED()
 
     _G.RegisterStateDriver(overrideBarStateHandler, "canexitvehicle",
       "[canexitvehicle]canexitvehicle;nocanexitvehicle")
+    ]=]
 
     overrideBarStateHandler:SetAttribute("_onstate-petbattle", [[
       if newstate == "petbattle" then
