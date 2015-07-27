@@ -45,11 +45,14 @@
 --   <aggixx> I always just swapped the item on my actionbar
 
 ---- FIXME -------------------------------------------------------------------------------------------------------------
--- There is a bug where the "V" macro doesn't acquire a target sometimes. This happens even though we don't have a
+-- There is a bug where the "V" macro doesn't acquire a target sometimes.  This happens even though we don't have a
 --   harmful target and there is an enemy player.  It seems to happen with, e.g. prowling Restoration Druids.
 -- Some [@mouseover] macros are bound with modifiers.  That makes them almost unusable.
 
 ---- TODO --------------------------------------------------------------------------------------------------------------
+-- Bind Fishing to a keybinding that's currently only used in arena.
+-- Bind [@mouseover,help] Wild Charge that also cancels form?
+-- Modifier-agnostic Skull Bash keybinding?
 -- Bind [@mouseover] Mark of the Wild.
 -- Both [@player] and [@pary1] binds should try [@mouseover,exists] first.
 -- Do something clever about Glyph of the Stag.
@@ -81,13 +84,7 @@ _G["BINDING_NAME_DONOTHING"]     = "Do Nothing"
 
 local secureHeader = _G.CreateFrame("Frame", nil, _G.UIParent, "SecureHandlerBaseTemplate")
 
---[[
-local function inArena()
-  return (_G.select(2, _G.IsInInstance())) == "arena"
-end
-]]
-
--- Also returns true for 2v2 arena.  Doesn't return true for 5v5 arena.
+-- Returns false for 5v5 arena.
 local function inArena()
   return (_G.select(2, _G.IsInInstance())) == "arena" and not _G.UnitExists("party3")
     and _G.GetNumArenaOpponentSpecs() <= 5
@@ -328,11 +325,9 @@ local macros = {
       "/dismount",
     --]]
   },
-  -- FIXME: why not "[help][@player]Rejuvenation" at the end instead?
   { key = "4", text =
       "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [@mouseover,help,dead]Revive;[@mouseover,help]Rejuvenation;[help,dead]Revive;[help]Rejuvenation;" ..
-        "[@player]Rejuvenation",
+      "/use [@mouseover,help,dead]Revive;[@mouseover,help]Rejuvenation;[help,dead]Revive;[help][@player]Rejuvenation",
   },
   { -- TODO: Fix all the ress macros.  The [dead] macro conditional seems to correspond to UnitIsDeadOrGhost().
     key = "SHIFT-4", text =
@@ -388,7 +383,9 @@ local macros = {
     update = function(self)
       self.button:SetAttribute("*macrotext1",
         "/use [form:1]Frenzied Regeneration\n" ..
-        "/use [@" .. db.party2 .. ",help,dead]Revive;[@" .. db.party2 .. ",help]Rejuvenation"
+        --"/use [@" .. db.party2 .. ",help,dead]Revive;[@" .. db.party2 .. ",help]Rejuvenation"
+        "/use [@mouseover,help]Mark of the Wild;[@" .. db.party2 .. ",help,dead]Revive;[@" .. db.party2 ..
+          ",help]Rejuvenation"
       )
     end,
   },
@@ -475,7 +472,6 @@ local macros = {
   { key = "ALT-W", text =
       "/use [help,nodead][@player]Antiseptic Bandage",
   },
-  ----[[
   { key = "E",
     update = function(self)
       if inArena() then
@@ -493,7 +489,6 @@ local macros = {
       end
     end,
   },
-  --]]
   { key = "SHIFT-E",
     update = function(self)
       if inArena() then
@@ -511,12 +506,10 @@ local macros = {
     update = function(self)
       if inArena() then
         self.button:SetAttribute("*macrotext1",
-          --"/use [@arena1,form:1/2]Wild Charge"
           "/castsequence [@arena1,form:1/2]reset=1 Wild Charge,Skull Bash"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          --"/use [form:1/2]Wild Charge"
           "/castsequence [form:1/2]reset=1 Wild Charge,Skull Bash"
         )
       end
@@ -745,12 +738,10 @@ local macros = {
     update = function(self)
       if inArena() then
         self.button:SetAttribute("*macrotext1",
-          --"/use [@arena2,form:1/2]Wild Charge"
           "/castsequence [@arena2,form:1/2]reset=1 Wild Charge,Skull Bash"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          --"/use [@focus,exists,form:1/2]Wild Charge"
           "/castsequence [@focus,exists,form:1/2]reset=1 Wild Charge,Skull Bash"
         )
       end
@@ -980,8 +971,7 @@ local macros = {
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Faerie Fire\n" ..
-          "/use [@focus]Faerie Swarm"
+          "/use 6"
         )
       end
     end,
@@ -1048,7 +1038,7 @@ local macros = {
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Cyclone"
+          "/use Survey"
         )
       end
     end,
@@ -1057,13 +1047,11 @@ local macros = {
     update = function(self)
       if inArena() then
         self.button:SetAttribute("*macrotext1",
-          --"/use [@arena3,form:1/2]Wild Charge"
           "/castsequence [@arena3,form:1/2]reset=1 Wild Charge,Skull Bash"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          --"/use [@focus,form:1/2]Wild Charge"
-          "/castsequence [@focus,form:1/2]reset=1 Wild Charge,Skull Bash"
+          "/use Fishing"
         )
       end
     end,
@@ -1230,14 +1218,18 @@ local macros = {
     update = function(self)
       if inArena() then
         self.button:SetAttribute("*macrotext1",
-          "/use [@mouseover,harm]Cyclone;[@mouseover,help]Rejuvenation\n" ..
+          "/cancelform [@mouseover,help]\n" ..
+          "/use [@mouseover,harm]Cyclone;[@mouseover,help]Wild Charge\n" ..
+          --"/use [@mouseover,harm]Cyclone;[@mouseover,help]Rejuvenation\n" ..
           "/stopmacro [@mouseover,harm][@mouseover,help]\n" ..
           "/tar arena1\n" ..
           "/stopattack"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@mouseover,harm]Cyclone;[@mouseover,help]Rejuvenation\n" ..
+          "/cancelform [@mouseover,help]\n" ..
+          "/use [@mouseover,harm]Cyclone;[@mouseover,help]Wild Charge\n" ..
+          --"/use [@mouseover,harm]Cyclone;[@mouseover,help]Rejuvenation\n" ..
           "/targetenemyplayer [@mouseover,noharm,nohelp]"
         )
       end
