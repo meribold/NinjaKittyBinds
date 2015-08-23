@@ -50,10 +50,7 @@
 -- Some [@mouseover] macros are bound with modifiers.  That makes them almost unusable.
 
 ---- TODO --------------------------------------------------------------------------------------------------------------
--- Bind Fishing to a keybinding that's currently only used in arena.
--- Bind [@mouseover,help] Wild Charge that also cancels form?
--- Modifier-agnostic Skull Bash keybinding?
--- Bind [@mouseover] Mark of the Wild.
+-- Modifier-agnostic Skull Bash keybinding.
 -- Both [@player] and [@pary1] binds should try [@mouseover,exists] first.
 -- Do something clever about Glyph of the Stag.
 -- Make vehicle binds work when Bartender isn't loaded.
@@ -67,8 +64,12 @@
 --   /targetfriendplayer?) outside arena.
 -- Kick on ASD?
 -- Maybe the normal Rake bind shouldn't auto-target; accidently used it on a resto druid after his shadow priest guised.
--- Make the addon work for all classes, binding only the canonical stuff for other classes.
--- The main Wild Charge macro should auto-target.
+-- Make the addon work for all classes, binding only the canonical stuff for classes other than Druid.
+-- Should the main Wild Charge macro auto-target?
+-- "C" is awful for kicking.  E.g., I can't rest my middle finger on "C" while pressing "F".
+-- Shadowmeld into Prowl should be faster and easier.
+-- Bind something to: SHIFT-3
+-- Also bind /targetenemy in arena?
 
 local addonName, addon = ...
 addon._G = _G
@@ -171,7 +172,7 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  { key = "SHIFT-3", command = "DONOTHING" }, -- TODO: bind something here.
+  { key = "SHIFT-3", command = "DONOTHING" },
   { key = "ALT-3",
     init = function(self)
       -- Things I've tried that don't work. These two approaches don't work at all:
@@ -404,29 +405,15 @@ local macros = {
       )
     end,
   },
-  { key = "TAB",
-    update = function(self)
-      if (_G.select(2, _G.UnitRace("player"))) == "NightElf" then
-        self.button:SetAttribute("*macrotext1",
-          "/cancelaura Prowl\n" .. -- When we want to Shadowmeld, we want to Shadowmeld! We don't want to be told that
-          "/use Shadowmeld"        -- "a more powerful spell is already active".
-        )
-      elseif (_G.select(2, _G.UnitRace("player"))) == "Worgen" then
-        self.button:SetAttribute("*macrotext1",
-          "/use Darkflight"
-        )
-      elseif (_G.select(2, _G.UnitRace("player"))) == "Tauren" then
-        self.button:SetAttribute("*macrotext1",
-          "/use War Stomp"
-        )
-      elseif (_G.select(2, _G.UnitRace("player"))) == "Troll" then
-        self.button:SetAttribute("*macrotext1",
-          "/use Berserking"
-        )
-      else
-        _G.error()
-      end
-    end,
+  { key = "TAB", text =
+      "/use [form:2,nocombat,nostealth]Conjured Mana Fritter\n" ..
+      "/use [form:2,nocombat,nostealth]Conjured Mana Buns\n" ..
+      "/use [form:2,nocombat,nostealth]Conjured Mana Pudding\n" ..
+      "/use [form:2,nocombat,nostealth]Gorgrond Mineral Water\n" ..
+      "/use [form:2,nocombat,nostealth]Cobo Cola\n" ..
+      "/use [form:2,nocombat,nostealth]Golden Carp Consomme\n" ..
+      "/cancelform [form:3,flying]\n" ..
+      "/use !Prowl",
   },
   { key = "SHIFT-TAB", command = "DONOTHING" },
   { key = "ALT-TAB", command = "DONOTHING" },
@@ -754,7 +741,7 @@ local macros = {
       self.button:SetAttribute("*macrotext1", -- Used when [noform:1/2].
         "/use Cat Form"
       )
-      self.button:SetAttribute("*macrotext2", -- Used when [form:2,nostealth][harm,form:2,nostealth].
+      self.button:SetAttribute("*macrotext2", -- Used when [form:2,nostealth][harm,form:2].
         "/stopattack [stealth]\n" ..
         "/use [@mouseover,harm][harm]Shred\n" ..
         "/stopattack [stealth]\n" ..
@@ -763,9 +750,10 @@ local macros = {
       self.button:SetAttribute("*macrotext3", -- Used when [noexists,form:2,stealth][noharm,form:2,stealth].
         "/use [@mouseover,harm]Shred\n" ..
         "/stopmacro [@mouseover,harm]\n" ..
-        "/targetenemyplayer [stealth]\n" ..
+        "/cleartarget\n" .. -- Buggy without this.
+        "/targetenemyplayer\n" ..
         "/tar [noexists]player\n" ..
-        "/stopmacro [noexists][noharm]\n" ..
+        "/stopmacro [noharm]\n" ..
         "/use Shred\n" ..
         "/tar player"
       )
@@ -852,12 +840,13 @@ local macros = {
       self.button:SetAttribute("*macrotext2", -- Used when [noexists,stealth][noharm,stealth].
         "/use Incapacitating Roar\n" ..
         "/use Ursol's Vortex\n" ..
-        "/stopmacro [notalent:5/3]\n" ..
+        "/stopmacro [notalent:5/3]\n" .. -- Continue if specced into Mighty Bash.
         "/use [@mouseover,harm]Mighty Bash\n" ..
         "/stopmacro [@mouseover,harm]\n" ..
-        "/targetenemyplayer [stealth]\n" ..
+        "/cleartarget\n" .. -- Buggy without this.
+        "/targetenemyplayer\n" ..
         "/tar [noexists]player\n" ..
-        "/stopmacro [noexists][noharm]\n" ..
+        "/stopmacro [noharm]\n" ..
         "/use Mighty Bash\n" ..
         "/tar player"
       )
@@ -909,15 +898,51 @@ local macros = {
   { key = "ALT-H", text =
       "/use [harm,form:1/2][@none,form:1/2]Thrash;[harm]Wrath",
   },
-  { key = "Z", text =
-      "/use [form:2,nocombat,nostealth]Conjured Mana Fritter\n" ..
-      "/use [form:2,nocombat,nostealth]Conjured Mana Buns\n" ..
-      "/use [form:2,nocombat,nostealth]Conjured Mana Pudding\n" ..
-      "/use [form:2,nocombat,nostealth]Gorgrond Mineral Water\n" ..
-      "/use [form:2,nocombat,nostealth]Cobo Cola\n" ..
-      "/use [form:2,nocombat,nostealth]Golden Carp Consomme\n" ..
-      "/cancelform [form:3,flying]\n" ..
-      "/use !Prowl",
+  { key = "Z",
+    init = function(self)
+      self.button:SetAttribute("type", "macro")
+      _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
+        if not down then
+          return "RightButton"
+        end
+      ]])
+      self.button:RegisterForClicks("AnyDown", "AnyUp")
+    end,
+    update = function(self)
+      if (_G.select(2, _G.UnitRace("player"))) == "NightElf" then
+        --[[
+        self.button:SetAttribute("*macrotext1",
+          "/cancelaura Prowl\n" .. -- Also Shadowmeld if "a more powerful spell is already active".
+          "/use Shadowmeld"
+        )
+        --]]
+        self.button:SetAttribute("*macrotext1",
+          "/use Shadowmeld\n" ..
+          "/cancelform [form:3,flying]\n" ..
+          "/use [nostealth]!Prowl"
+        )
+        self.button:SetAttribute("*macrotext2",
+          "/use !Prowl"
+        )
+      elseif (_G.select(2, _G.UnitRace("player"))) == "Worgen" then
+        self.button:SetAttribute("*macrotext1",
+          "/use Darkflight"
+        )
+        self.button:SetAttribute("*macrotext2")
+      elseif (_G.select(2, _G.UnitRace("player"))) == "Tauren" then
+        self.button:SetAttribute("*macrotext1",
+          "/use War Stomp"
+        )
+        self.button:SetAttribute("*macrotext2")
+      elseif (_G.select(2, _G.UnitRace("player"))) == "Troll" then
+        self.button:SetAttribute("*macrotext1",
+          "/use Berserking"
+        )
+        self.button:SetAttribute("*macrotext2")
+      else
+        _G.error()
+      end
+    end,
   },
   { key = "SHIFT-Z",
     update = function(self)
@@ -1061,18 +1086,23 @@ local macros = {
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [form:2,harm][form:2,nostealth].
         "/stopattack [stealth]\n" ..
+        --"/use [nocombat,nostealth]Prowl\n" .. Doesn't work but Prowl is used.
         "/use [@mouseover,harm][harm]Rake\n" ..
         "/stopattack [stealth]\n" ..    -- Rake (and Shred) will start auto-attack even when used in stealth :/
         "/startattack [harm,nostealth]" -- Also start auto-attack when there's not enough energy.
       )
-      self.button:SetAttribute("*macrotext2", -- Used when [noexists,form:2,stealth][noharm,form:2,stealth] (should
-        "/use [@mouseover,harm]Rake\n" ..     -- implay we aren't auto-attacking).
+      -- Used when [noexists,form:2,stealth][noharm,form:2,stealth] (should imply we aren't auto-attacking).  It seems
+      -- /targetenemyplayer doesn't acquire a target sometimes or doesn't acquire the obvious target right in front of
+      -- the character when using this macro without /cleartarget.
+      self.button:SetAttribute("*macrotext2",
+        "/use [@mouseover,harm]Rake\n" ..
         "/stopmacro [@mouseover,harm]\n" ..
-        "/targetenemyplayer [stealth]\n" ..
+        "/cleartarget\n" .. -- Buggy without this.
+        "/targetenemyplayer\n" ..
         "/tar [noexists]player\n" ..
-        "/stopmacro [noexists][noharm]\n" ..
+        "/stopmacro [noharm]\n" ..
         "/use Rake\n" ..
-        "/stopattack [stealth]\n" ..
+        "/stopattack\n" ..
         "/tar player"
       )
       self.button:SetAttribute("*macrotext3", -- Used when [noform:2].
@@ -1357,7 +1387,7 @@ local macros = {
     update = function(self)
       if inArena() then
         self.button:SetAttribute("*macrotext1",
-          "/targetenemy"
+          "/use [noform:1/2]Cat Form;[]Skull Bash"
         )
         _G.SecureHandlerUnwrapScript(self.button, "OnClick")
       else
