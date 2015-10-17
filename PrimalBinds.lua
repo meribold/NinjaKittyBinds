@@ -8,6 +8,12 @@
 -- Can't target totems by name: Healing Stream Totem, Windwalk Totem, Earthbind Totem, Earthgrab Totem, Mana Tide Totem,
 -- Healing Tide Totem, Capacitor Totem, Spirit Link Totem, ...
 
+-- Specialization IDs
+-- 102: Balance
+-- 103: Feral
+-- 104: Guardian
+-- 105: Restoration
+
 -- I think "/use [@party1]Rejuvenation" while having a party1 but being far away causes Rejuvenation to wait for us
 -- clicking a target (SpellIsTargeting()).  "/use [@party1,exists]Rejuvenation" is the same.  "/use [@party1,help]
 -- Rejuvenation" doesn't do it.  This seems like a better fix than "/use 1"  which has the effect of the protected
@@ -45,8 +51,6 @@
 --   <aggixx> I always just swapped the item on my actionbar
 
 ---- FIXME -------------------------------------------------------------------------------------------------------------
--- There is a bug where the "V" macro doesn't acquire a target sometimes.  This happens even though we don't have a
---   harmful target and there is an enemy player.  It seems to happen with, e.g. prowling Restoration Druids.
 -- Some [@mouseover] macros are bound with modifiers.  That makes them almost unusable.
 
 ---- TODO --------------------------------------------------------------------------------------------------------------
@@ -87,8 +91,8 @@ local secureHeader = _G.CreateFrame("Frame", nil, _G.UIParent, "SecureHandlerBas
 
 -- Returns false for 5v5 arena.
 local function inArena()
-  return (_G.select(2, _G.IsInInstance())) == "arena" and not _G.UnitExists("party3")
-    and _G.GetNumArenaOpponentSpecs() <= 5
+  return (_G.select(2, _G.IsInInstance())) == "arena" and not _G.UnitExists("party3") and
+    _G.GetNumArenaOpponentSpecs() <= 5
 end
 
 ---- < MACROS > --------------------------------------------------------------------------------------------------------
@@ -110,7 +114,8 @@ local macros = {
   { key = "ALT-1", command = "DONOTHING" },
   { key = "CTRL-1", command = "DONOTHING" },
   { key = "2", text =
-      "/use Nature's Vigil",
+      "/use Nature's Vigil\n" ..
+      "/use Heart of the Wild"
   },
   { key = "SHIFT-2", text =
       "/use Renewal\n" ..
@@ -124,7 +129,7 @@ local macros = {
       "/use [nocombat]Conjured Mana Pudding\n" ..
       "/use [nocombat]Gorgrond Mineral Water\n" ..
       "/use [nocombat]Cobo Cola\n" ..
-      "/use [nocombat]Golden Carp Consomme",
+      "/use [nocombat]Golden Carp Consomme"
   },
   { key = "3", specs = { [103] = true },
     init = function(self)
@@ -154,9 +159,10 @@ local macros = {
 
       -- Used when Incarnation is active (Prowl's spell ID is 102547).
       self.button:SetAttribute("*macrotext2",
-        "/use 14\n" ..
-        "/use Berserk\n" ..
-        "/use Berserking"
+        --"/use [form:2]14\n" ..
+        --"/use [form:2]Berserk\n" ..
+        --"/use [form:2]Berserking\n" ..
+        "/use [noform:2]Cat Form"
       )
 
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
@@ -172,7 +178,14 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  { key = "SHIFT-3", command = "DONOTHING" },
+  { key = "3", specs = { [105] = true }, text =
+      "/use Incarnation: Tree of Life"
+  },
+  { key = "SHIFT-3", text =
+      "/use [form:2]14\n" ..
+      "/use [form:2]Berserk\n" ..
+      "/use [form:2]Berserking"
+  },
   { key = "ALT-3",
     init = function(self)
       -- Things I've tried that don't work. These two approaches don't work at all:
@@ -323,17 +336,17 @@ local macros = {
       --"/userandom [nomounted,noflyable]Silver Covenant Hippogryph,Cenarion War Hippogryph,Swift Moonsaber," ..
         --"Fossilized Raptor,Winterspring Frostsaber\n" ..
       "/use 15\n" ..
-      "/dismount",
+      "/dismount"
     --]]
   },
   { key = "4", text =
       "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [@mouseover,help,dead]Revive;[@mouseover,help]Rejuvenation;[help,dead]Revive;[help][@player]Rejuvenation",
+      "/use [@mouseover,help,dead]Revive;[@mouseover,help]Rejuvenation;[help,dead]Revive;[help][@player]Rejuvenation"
   },
   { -- TODO: Fix all the ress macros.  The [dead] macro conditional seems to correspond to UnitIsDeadOrGhost().
     key = "SHIFT-4", text =
       "/use [@mouseover,help,dead]Rebirth;[@mouseover,help]Healing Touch;[help,dead]Rebirth;[help]Healing Touch;" ..
-        "[@player]Healing Touch",
+        "[@player]Healing Touch"
   },
   --[=[
   { -- This would be nice, but we can't get the name of a targeted party or raid member from the restricted environment.
@@ -355,7 +368,7 @@ local macros = {
   { key = "ALT-4", text =
       "/use Heart of the Wild\n" ..
       "/use Healthstone\n" ..
-      "/use [@mouseover,help,nodead][help,nodead][@player]Cenarion Ward",
+      "/use [@mouseover,help,nodead][help,nodead][@player]Cenarion Ward"
   },
   { key = "5",
     update = function(self)
@@ -413,12 +426,15 @@ local macros = {
       "/use [form:2,nocombat,nostealth]Cobo Cola\n" ..
       "/use [form:2,nocombat,nostealth]Golden Carp Consomme\n" ..
       "/cancelform [form:3,flying]\n" ..
-      "/use !Prowl",
+      "/use !Prowl"
   },
   { key = "SHIFT-TAB", command = "DONOTHING" },
   { key = "ALT-TAB", command = "DONOTHING" },
   { key = "CTRL-TAB", command = "DONOTHING" },
-  { key = "Q", text = "/use 13" },
+  { key = "Q", text =
+      "/use 13\n" ..
+      "/use 13"
+  },
   { key = "SHIFT-Q",
     update = function(self)
       if inArena() then
@@ -435,11 +451,14 @@ local macros = {
   { key = "ALT-Q", text =
       "/use [form:2]14\n" ..
       "/use [form:2]Berserk\n" ..
-      "/use [form:2]Berserking",
+      "/use [form:2]Berserking"
   },
   { key = "CTRL-Q", command = "DONOTHING" },
-  { key = "W", text =
+  { key = "W", specs = { [103] = true, [104] = true }, text =
       "/use Survival Instincts"
+  },
+  { key = "W", specs = { [102] = true, [105] = true }, text =
+      "/use [help]Ironbark"
   },
   { key = "SHIFT-W",
     update = function(self)
@@ -457,9 +476,9 @@ local macros = {
     end,
   },
   { key = "ALT-W", text =
-      "/use [help,nodead][@player]Antiseptic Bandage",
+      "/use [help,nodead][@player]Antiseptic Bandage"
   },
-  { key = "E",
+  { key = "E", specs = { [103] = true, [104] = true },
     update = function(self)
       if inArena() then
         self.button:SetAttribute("*macrotext1",
@@ -475,6 +494,10 @@ local macros = {
         )
       end
     end,
+  },
+  { key = "E", specs = { [105] = true }, text =
+      "/stopcasting\n" ..
+      "/use !Bear Form"
   },
   { key = "SHIFT-E",
     update = function(self)
@@ -502,14 +525,20 @@ local macros = {
       end
     end,
   },
-  { key = "R", text =
+  { key = "R", specs = { [103] = true }, text =
       "/use [form:1]Frenzied Regeneration\n" ..
       "/use [noform:2]Cat Form;Maim" -- Maim doesn't seem to auto-acquire a target.
+  },
+  { key = "R", specs = { [105] = true }, text =
+      "/use [help]Rejuvenation"
   },
   { key = "SHIFT-R", specs = { [103] = true }, text =
       "/use [form:1]Frenzied Regeneration\n" ..
       "/use [noform:2]Cat Form;Savage Roar\n" ..
-      "/mountspecial",
+      "/mountspecial"
+  },
+  { key = "SHIFT-R", specs = { [105] = true }, text =
+      "/use Genesis"
   },
   { key = "ALT-R",
     init = function(self)
@@ -544,10 +573,13 @@ local macros = {
       end
     end,
   },
-  { key = "T", text =
+  { key = "T", specs = { [102] = true, [103] = true, [104] = true }, text =
       "/stopcasting\n" ..
       "/use Typhoon\n" ..
-      "/use Mass Entanglement",
+      "/use Mass Entanglement"
+  },
+  { key = "T", specs = { [105] = true }, text =
+      "/use [help]Wild Mushroom"
   },
   { key = "SHIFT-T",
     update = function(self)
@@ -577,13 +609,17 @@ local macros = {
   },
   { key = "Y", specs = { [102] = true, [103] = true, [104] = true }, text =
       "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [@mouseover,help,nodead][help,nodead][@player]Remove Corruption",
+      "/use [@mouseover,help,nodead][help,nodead][@player]Remove Corruption"
+  },
+  { key = "Y", specs = { [105] = true }, text =
+      "/use [form:1]Frenzied Regeneration\n" ..
+      "/use [@mouseover,help,nodead][help,nodead][@player]Nature's Cure"
   },
   { key = "SHIFT-Y", text =
-      "/use [@mouseover,help,nodead][@player]Mark of the Wild",
+      "/use [@mouseover,help,nodead][@player]Mark of the Wild"
   },
   { key = "ALT-Y", text =
-      "/use Hurricane",
+      "/use Hurricane"
   },
   { key = "ESCAPE",
     init = function(self)
@@ -607,7 +643,7 @@ local macros = {
   { key = "A", text =
       "/use [form:1]Frenzied Regeneration\n" ..
       "/cancelform [form]\n" ..
-      "/dismount [mounted]\n",
+      "/dismount [mounted]"
   },
   { key = "SHIFT-A",
     update = function(self)
@@ -624,8 +660,9 @@ local macros = {
   },
   { key = "ALT-A", command = "DONOTHING" },
   { key = "CTRL-A", command = "DONOTHING" },
-  { key = "S", -- Canceling form and using Wild Charge with just one click isn't possible (I think).
+  { key = "S", specs = { [102] = true, [103] = true, [104] = true },
     update = function(self)
+      -- Canceling form and using Wild Charge with just one click isn't possible (I think).
       self.button:SetAttribute("*macrotext1",
         "/stopcasting\n" ..
         "/use [talent:1/2,form:1]Frenzied Regeneration\n" ..
@@ -635,6 +672,9 @@ local macros = {
         "/use [form:3]1" -- Fixes the previous line using Wild Charge in Flight Form with no target.
       )
     end,
+  },
+  { key = "S", specs = { [105] = true }, text =
+      "/use [help]Nature's Swiftness"
   },
   --[=[
   { key = "S",
@@ -689,7 +729,7 @@ local macros = {
       )
     end,
   },
-  { key = "D",
+  { key = "D", specs = { [103] = true, [104] = true },
     update = function(self)
       if inArena() then
         self.button:SetAttribute("*macrotext1",
@@ -707,6 +747,10 @@ local macros = {
         )
       end
     end,
+  },
+  { key = "D", specs = { [105] = true }, text =
+      "/stopcasting\n" ..
+      "/use !Travel Form"
   },
   { key = "SHIFT-D",
     update = function(self)
@@ -735,7 +779,7 @@ local macros = {
     end,
   },
   --{ key = "F", command = "INTERACTMOUSEOVER" },
-  { key = "F", -- Shred auto-acquires a target when without a hostile target.
+  { key = "F", specs = { [103] = true }, -- Shred auto-acquires a target when without a hostile target.
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [noform:1/2].
@@ -777,7 +821,10 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  { key = "SHIFT-F",
+  { key = "F", specs = { [105] = true }, text =
+      "/use [help]Regrowth"
+  },
+  { key = "SHIFT-F", specs = { [103] = true },
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [noform:2].
@@ -793,6 +840,9 @@ local macros = {
       ]])
       self.button:RegisterForClicks("AnyDown")
     end
+  },
+  { key = "SHIFT-F", specs = { [105] = true }, text =
+      "/use [help]Swiftmend"
   },
   { key = "ALT-F",
     init = function(self)
@@ -827,7 +877,7 @@ local macros = {
       end
     end,
   },
-  { key = "G",
+  { key = "G", specs = { [103] = true, [104] = true },
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [harm][nostealth].
@@ -857,6 +907,9 @@ local macros = {
       ]])
       self.button:RegisterForClicks("AnyDown")
     end,
+  },
+  { key = "G", specs = { [105] = true }, text =
+      "/use [help]Healing Touch"
   },
   { key = "SHIFT-G",
     update = function(self)
@@ -892,11 +945,19 @@ local macros = {
       )
     end,
   },
+  { key = "H", specs = { [105] = true },
+    update = function(self)
+      self.button:SetAttribute("*macrotext1",
+        "/use [form:1]Frenzied Regeneration\n" ..
+        "/use [@mouseover,help][@" .. db.party1 .. ",help]Nature's Cure"
+      )
+    end,
+  },
   { key = "SHIFT-H", text =
-      "/use Moonfire",
+      "/use Moonfire"
   },
   { key = "ALT-H", text =
-      "/use [harm,form:1/2][@none,form:1/2]Thrash;[harm]Wrath",
+      "/use [harm,form:1/2][@none,form:1/2]Thrash;[harm]Wrath"
   },
   { key = "Z",
     init = function(self)
@@ -987,6 +1048,9 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
+  { key = "X", specs = { [105] = true }, text =
+      "/use Barkskin"
+  },
   { key = "SHIFT-X",
     update = function(self)
       if inArena() then
@@ -1038,7 +1102,7 @@ local macros = {
       )
     end,
   },
-  { key = "C",
+  { key = "C", specs = { [103] = true, [104] = true },
     update = function(self)
       if inArena() then
         self.button:SetAttribute("*macrotext1",
@@ -1054,6 +1118,10 @@ local macros = {
         )
       end
     end,
+  },
+  { key = "C", specs = { [105] = true }, text =
+      "/stopcasting\n" ..
+      "/use [noform:2]!Cat Form;[harm]Shred"
   },
   { key = "SHIFT-C",
     update = function(self)
@@ -1081,7 +1149,7 @@ local macros = {
       end
     end,
   },
-  { key = "V",
+  { key = "V", specs = { [103] = true },
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [form:2,harm][form:2,nostealth].
@@ -1119,9 +1187,12 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   }, -- See http://www.arenajunkies.com/topic/290488-feral-rake-stun-opener
+  { key = "V", specs = { [105] = true }, text =
+      "/use [help]Lifebloom"
+  },
   { key = "SHIFT-V", text =
       "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [noform:2]Cat Form;[harm]Rip",
+      "/use [noform:2]Cat Form;[harm]Rip"
   },
   { key = "ALT-V",
     init = function(self)
@@ -1145,9 +1216,12 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  { key = "B", text =
+  { key = "B", specs = { [102] = true, [103] = true, [104] = true }, text =
       "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [noform:1]Bear Form",
+      "/use [noform:1]Bear Form"
+  },
+  { key = "B", specs = { [105] = true }, text =
+      "/use Displacer Beast"
   },
   { key = "SHIFT-B",
     update = function(self)
@@ -1183,12 +1257,24 @@ local macros = {
       )
     end,
   },
-  { key = "SHIFT-N", text =
-      "/use [outdoors][swimming]!Travel Form;[noform:2]Cat Form",
+  { key = "N", specs = { [105] = true },
+    update = function(self)
+      self.button:SetAttribute("*macrotext1",
+        "/use [form:1]Frenzied Regeneration\n" ..
+        "/use [@" .. db.party2 .. ",help]Nature's Cure"
+      )
+    end,
   },
-  { key = "ALT-N", text =
+  { key = "SHIFT-N", text =
+      "/use [outdoors][swimming]!Travel Form;[noform:2]Cat Form"
+  },
+  { key = "ALT-N", specs = { [103] = true }, text =
       "/use [form:1]Frenzied Regeneration\n" ..
-      "/use [noform:2]Cat Form;[harm,form:2][@none,form:2]Swipe",
+      "/use [noform:2]Cat Form;[harm,form:2][@none,form:2]Swipe"
+  },
+  { key = "ALT-N", specs = { [105] = true }, text =
+      "/use [form:1]Frenzied Regeneration\n" ..
+      "/use Tranquility"
   },
   { key = "/", command = "OPENCHATSLASH" },
   { key = "SPACE", command = "MOVEFORWARD" },
@@ -1243,8 +1329,7 @@ local macros = {
     end,
   },
   --]]
-  ----[[
-  { key = "MOUSEWHEELUP",
+  { key = "MOUSEWHEELUP", specs = { [102] = true, [103] = true, [104] = true },
     update = function(self)
       if inArena() then
         self.button:SetAttribute("*macrotext1",
@@ -1265,7 +1350,9 @@ local macros = {
       end
     end,
   },
-  --]]
+  { key = "MOUSEWHEELUP", specs = { [105] = true }, text =
+      "/tar player"
+  },
   { key = "SHIFT-MOUSEWHEELUP" },
   { key = "ALT-MOUSEWHEELUP" },
   { key = "CTRL-MOUSEWHEELUP", command = "CAMERAZOOMIN" },
@@ -1288,8 +1375,7 @@ local macros = {
     end,
   },
   --]]
-  ----[[
-  { key = "BUTTON3",
+  { key = "BUTTON3", specs = { [102] = true, [103] = true, [104] = true },
     update = function(self)
       if inArena() then
         self.button:SetAttribute("*macrotext1",
@@ -1304,7 +1390,9 @@ local macros = {
       end
     end,
   },
-  --]]
+  { key = "BUTTON3", specs = { [105] = true }, text =
+      "/tar party1"
+  },
   { key = "SHIFT-BUTTON3" },
   { key = "ALT-BUTTON3" },
   { key = "CTRL-BUTTON3" },
@@ -1337,11 +1425,10 @@ local macros = {
   { key = "MOUSEWHEELDOWN", text =
       "/stopcasting [form:1/2]\n" ..
       "/cancelaura [form:1/2]Hand of Protection\n" ..
-      "/use [@arena3]Skull Bash",
+      "/use [@arena3]Skull Bash"
   },
   --]]
-  ----[[
-  { key = "MOUSEWHEELDOWN",
+  { key = "MOUSEWHEELDOWN", specs = { [102] = true, [103] = true, [104] = true },
     update = function(self)
       if inArena() then
         self.button:SetAttribute("*macrotext1",
@@ -1357,6 +1444,9 @@ local macros = {
         )
       end
     end,
+  },
+  { key = "MOUSEWHEELDOWN", specs = { [105] = true }, text =
+      "/tar party2"
   },
   { key = "SHIFT-MOUSEWHEELDOWN" },
   { key = "ALT-MOUSEWHEELDOWN" },
@@ -1426,7 +1516,9 @@ local macros = {
       end
     end,
   },
-  { key = "SHIFT-BUTTON4", text = "/focus" },
+  { key = "SHIFT-BUTTON4", text =
+      "/focus"
+  },
   { key = "ALT-BUTTON4" },
   { key = "BUTTON5", command = "JUMP" },
   { key = "SHIFT-BUTTON5" },
@@ -1470,16 +1562,16 @@ local macros = {
   { key = "NUMPAD1", text =
       "/stopcasting [form:1/2]\n" ..
       "/cancelaura [form:1/2]Hand of Protection\n" ..
-      "/use [noform:1/2]Cat Form;[@arena3]Skull Bash",
+      "/use [noform:1/2]Cat Form;[@arena3]Skull Bash"
   },
   { key = "NUMPAD6", text =
-      "/tar arena1",
+      "/tar arena1"
   },
   { key = "NUMPAD5", text =
-      "/tar arena2",
+      "/tar arena2"
   },
   { key = "NUMPAD4", text =
-      "/tar arena3",
+      "/tar arena3"
   },
   --]]
   { key = "-" },
@@ -1516,7 +1608,7 @@ local function bind()
       _G.SetBindingClick(macro.key, macro.button:GetName(), "LeftButton")
     elseif macro.command then
       _G.SetBinding(macro.key, macro.command)
-    else
+    elseif not _G[addonName .. macro.key .. "Button"] then
       --_G.SetBinding(macro.key, "CLICK " .. addonName .. "DummyButton")
       --_G.SetBinding(macro.key, "DONOTHING")
       _G.SetBinding(macro.key)
