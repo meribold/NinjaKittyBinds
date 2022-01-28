@@ -114,12 +114,10 @@ local macros = {
   { key = "ALT-1", command = "DONOTHING" },
   { key = "CTRL-1", command = "DONOTHING" },
   { key = "2", text =
-      "/use Nature's Vigil\n" ..
-      "/use Heart of the Wild"
+      "/use [@mouseover,help,dead]Revive;[@mouseover,help]Thorns;[help,dead]Revive;[help][@player]Thorns"
   },
   { key = "SHIFT-2", text =
-      "/use Renewal\n" ..
-      "/use [notalent:2/2]Healthstone"
+      "/use Nature's Grasp"
   },
   { key = "ALT-2", text =
       "/cancelaura Hand of Protection\n" ..
@@ -129,7 +127,8 @@ local macros = {
       "/use [nocombat]Conjured Mana Pudding\n" ..
       "/use [nocombat]Gorgrond Mineral Water\n" ..
       "/use [nocombat]Cobo Cola\n" ..
-      "/use [nocombat]Golden Carp Consomme"
+      "/use [nocombat]Golden Carp Consomme\n" ..
+      "/use [nocombat]Refreshing Spring Water"
   },
   { key = "3", specs = { [103] = true },
     init = function(self)
@@ -193,6 +192,7 @@ local macros = {
       --   self.button:SetAttribute("type", "summonmount")
       -- This one basically works, but it can't cancel shapeshift forms:
       --   self.button:SetAttribute("*macrotext1", "/run C_MountJournal.Summon(0)")
+      --[=[
       if db.randomFavMountActionSlot then
         local randomFavMountButton = _G.CreateFrame("Button", "RandomFavoriteMountButton", _G.UIParent,
           "SecureActionButtonTemplate")
@@ -227,6 +227,7 @@ local macros = {
         -- MountJournalSummonRandomFavoriteButton_OnClick() in "Blizzard_PetBattleUI.lua".
       end
       self.button:RegisterForClicks("AnyDown")
+      --]=]
       --[[
       local favoriteMounts = {
         ["Black War Bear"] = true,
@@ -341,10 +342,13 @@ local macros = {
   },
   { key = "4", text =
       "/use [form:1]Frenzied Regeneration\n" ..
+      "/cancelform\n" ..
       "/use [@mouseover,help,dead]Revive;[@mouseover,help]Rejuvenation;[help,dead]Revive;[help][@player]Rejuvenation"
   },
   { -- TODO: Fix all the ress macros.  The [dead] macro conditional seems to correspond to UnitIsDeadOrGhost().
     key = "SHIFT-4", text =
+      "/use [form:1]Frenzied Regeneration\n" ..
+      "/cancelform\n" ..
       "/use [@mouseover,help,dead]Rebirth;[@mouseover,help]Healing Touch;[help,dead]Rebirth;[help]Healing Touch;" ..
         "[@player]Healing Touch"
   },
@@ -368,6 +372,8 @@ local macros = {
   { key = "ALT-4", text =
       "/use Heart of the Wild\n" ..
       "/use Healthstone\n" ..
+      "/cancelform\n" ..
+      "/use Minor Healing Potion\n" ..
       "/use [@mouseover,help,nodead][help,nodead][@player]Cenarion Ward"
   },
   { key = "5",
@@ -425,6 +431,7 @@ local macros = {
       "/use [form:2,nocombat,nostealth]Gorgrond Mineral Water\n" ..
       "/use [form:2,nocombat,nostealth]Cobo Cola\n" ..
       "/use [form:2,nocombat,nostealth]Golden Carp Consomme\n" ..
+      "/use [form:2,nocombat,nostealth]Refreshing Spring Water\n" ..
       "/cancelform [form:3,flying]\n" ..
       "/use !Prowl"
   },
@@ -598,11 +605,11 @@ local macros = {
     update = function(self)
       if inArena() then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena1]Mighty Bash"
+          "/use [@arena1]Bash"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use Mighty Bash"
+          "/use Bash"
         )
       end
     end,
@@ -616,7 +623,7 @@ local macros = {
       "/use [@mouseover,help,nodead][help,nodead][@player]Nature's Cure"
   },
   { key = "SHIFT-Y", text =
-      "/use [@mouseover,help,nodead][@player]Mark of the Wild"
+      "/use [@mouseover,help,nodead][help][@player]Mark of the Wild"
   },
   { key = "ALT-Y", text =
       "/use Hurricane"
@@ -779,7 +786,7 @@ local macros = {
     end,
   },
   --{ key = "F", command = "INTERACTMOUSEOVER" },
-  { key = "F", specs = { [103] = true }, -- Shred auto-acquires a target when without a hostile target.
+  { key = "F", -- Shred auto-acquires a target when without a hostile target.
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [noform:1/2].
@@ -802,7 +809,8 @@ local macros = {
         "/tar player"
       )
       self.button:SetAttribute("*macrotext4", -- Used when [form:1].
-        "/use [@mouseover,harm][harm]Mangle\n" ..
+        "/startattack [harm]\n" ..
+        "/use [@mouseover,harm][harm]Maul\n" ..
         "/tar [noexists]player"
       )
       -- Our snippets get these arguments: self, button, down. See wowprogramming.com/utils/xmlbrowser/test/FrameXML/
@@ -821,10 +829,7 @@ local macros = {
       self.button:RegisterForClicks("AnyDown")
     end,
   },
-  { key = "F", specs = { [105] = true }, text =
-      "/use [help]Regrowth"
-  },
-  { key = "SHIFT-F", specs = { [103] = true },
+  { key = "SHIFT-F",
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [noform:2].
@@ -840,9 +845,6 @@ local macros = {
       ]])
       self.button:RegisterForClicks("AnyDown")
     end
-  },
-  { key = "SHIFT-F", specs = { [105] = true }, text =
-      "/use [help]Swiftmend"
   },
   { key = "ALT-F",
     init = function(self)
@@ -881,23 +883,17 @@ local macros = {
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when [harm][nostealth].
-        "/use Incapacitating Roar\n" ..
-        "/use Ursol's Vortex\n" ..
-        "/stopmacro [notalent:5/3]\n" ..
         "/tar [noexists]player\n" ..
-        "/use [@mouseover,harm][harm]Mighty Bash"
+        "/use [@mouseover,harm][harm]Bash"
       )
       self.button:SetAttribute("*macrotext2", -- Used when [noexists,stealth][noharm,stealth].
-        "/use Incapacitating Roar\n" ..
-        "/use Ursol's Vortex\n" ..
-        "/stopmacro [notalent:5/3]\n" .. -- Continue if specced into Mighty Bash.
-        "/use [@mouseover,harm]Mighty Bash\n" ..
+        "/use [@mouseover,harm]Bash\n" ..
         "/stopmacro [@mouseover,harm]\n" ..
         "/cleartarget\n" .. -- Buggy without this.
         "/targetenemyplayer\n" ..
         "/tar [noexists]player\n" ..
         "/stopmacro [noharm]\n" ..
-        "/use Mighty Bash\n" ..
+        "/use Bash\n" ..
         "/tar player"
       )
       _G.SecureHandlerWrapScript(self.button, "OnClick", secureHeader, [[
@@ -928,11 +924,11 @@ local macros = {
     update = function(self)
       if inArena() then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena2]Mighty Bash"
+          "/use [@arena2]Bash"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus,exists]Mighty Bash"
+          "/use [@focus,exists]Bash"
         )
       end
     end,
@@ -1020,7 +1016,9 @@ local macros = {
   },
   { key = "ALT-Z", command = "DONOTHING" },
   { key = "CTRL-Z", command = "DONOTHING" },
-  { key = "X", specs = { [103] = true },
+  { key = "X", specs = { [103] = true }, text =
+      "/use Enrage"
+    --[=[
     init = function(self)
       self.button:SetAttribute("type", "macro")
       self.button:SetAttribute("*macrotext1", -- Used when Incarnation isn't active (Prowl's spell ID is 5215).
@@ -1047,6 +1045,7 @@ local macros = {
       ]])
       self.button:RegisterForClicks("AnyDown")
     end,
+    ]=]
   },
   { key = "X", specs = { [105] = true }, text =
       "/use Barkskin"
@@ -1240,11 +1239,11 @@ local macros = {
     update = function(self)
       if inArena() then
         self.button:SetAttribute("*macrotext1",
-          "/use [@arena3]Mighty Bash"
+          "/use [@arena3]Bash"
         )
       else
         self.button:SetAttribute("*macrotext1",
-          "/use [@focus]Mighty Bash"
+          "/use [@focus]Bash"
         )
       end
     end,
@@ -1625,13 +1624,13 @@ local function bind()
   _G.SetModifiedClick("QUESTWATCHTOGGLE", "SHIFT")
   _G.SetModifiedClick("SELFCAST", "NONE")
   _G.SetModifiedClick("SHOWITEMFLYOUT", "SHIFT")
-  _G.SetModifiedClick("SOCKETITEM", "CTRL")
   _G.SetModifiedClick("SPLITSTACK", "SHIFT")
   _G.SetModifiedClick("STICKYCAMERA", "SHIFT")
   _G.SetModifiedClick("TOKENWATCHTOGGLE", "SHIFT")
 
   -- Can't use _G.CHARACTER_BINDINGS as it's defined as part of the load-on-demand Blizzard_BindingUI.
-  _G.SaveBindings(2)
+  _G.AttemptToSaveBindings(2)
+  -- _G.SaveBindings(2)
 
   _G.assert(_G.GetCurrentBindingSet() == 2)
 
@@ -1696,54 +1695,7 @@ function handlerFrame:ADDON_LOADED()
     _G.RegisterStateDriver(overrideBarStateHandler, "canexitvehicle",
       "[canexitvehicle]canexitvehicle;nocanexitvehicle")
     ]=]
-
-    overrideBarStateHandler:SetAttribute("_onstate-petbattle", [[
-      if newstate == "petbattle" then
-        for i, key in ipairs(table.new("A", "S", "D", "F", "G", "H")) do
-          self:SetBindingClick(false, key, "PrimalBindsPetBattle" .. key .. "Button")
-        end
-      elseif newstate == "nopetbattle" then
-        self:ClearBindings()
-      end
-    ]])
-
-    _G.RegisterStateDriver(overrideBarStateHandler, "petbattle",
-      "[petbattle]petbattle;nopetbattle")
   end
-
-  do
-    local keys = { "A", "S", "D", "F", "G" }
-    _G.assert(#keys == _G.NUM_BATTLE_PET_HOTKEYS)
-
-    local buttons = {
-      _G.PetBattleFrame.BottomFrame.SwitchPetButton,
-      _G.PetBattleFrame.BottomFrame.CatchButton,
-    }
-
-    -- Only for abilities, not other action buttons.
-    _G.hooksecurefunc("PetBattleAbilityButton_OnLoad", function(self)
-      local key = keys[self:GetID()]
-      local proxyButton = _G.CreateFrame("Button", "PrimalBindsPetBattle" .. key .. "Button", _G.UIParent,
-        "SecureActionButtonTemplate")
-      proxyButton:SetAttribute("type", "click")
-      proxyButton:SetAttribute("clickbutton", self)
-      proxyButton:RegisterForClicks("AnyDown")
-    end)
-
-    for _, button in _G.ipairs(buttons) do
-      local key = keys[button:GetID()]
-      local proxyButton = _G.CreateFrame("Button", "PrimalBindsPetBattle" .. key .. "Button", _G.UIParent,
-        "SecureActionButtonTemplate")
-      proxyButton:SetAttribute("type", "click")
-      proxyButton:SetAttribute("clickbutton", button)
-      proxyButton:RegisterForClicks("AnyDown")
-    end
-
-    _G.hooksecurefunc("PetBattleAbilityButton_UpdateHotKey", function(self)
-      self.HotKey:SetText(keys[self:GetID()])
-      self.HotKey:Show()
-    end)
-  end -- http://wowprogramming.com/utils/xmlbrowser/live/AddOns/Blizzard_PetBattleUI/Blizzard_PetBattleUI.lua
 
   -- wow.gamepedia.com/Creating_a_slash_command
   _G.SLASH_PRIMALBINDS1, SLASH_PRIMALBINDS2 = "/primalbinds"
@@ -1809,7 +1761,7 @@ function handlerFrame:PLAYER_LOGIN()
     end
   end
 
-  local specID, _ = _G.GetSpecializationInfo(_G.GetSpecialization() or 2)
+  local specID, _ = 103
   _G.assert(specID)
 
   for _, macro in _G.ipairs(macros) do
@@ -1844,23 +1796,7 @@ function handlerFrame:SPELLS_CHANGED(...)
   _G.print("SPELLS_CHANGED", ...)
 end
 
--- This event seems to be posted when gaining a level, in which case we may be in combat.
--- http://wowprogramming.com/docs/events/PLAYER_SPECIALIZATION_CHANGED
-function handlerFrame:PLAYER_SPECIALIZATION_CHANGED(unit)
-  _G.assert(unit == "player")
-  if not _G.InCombatLockdown() then
-    update()
-  else
-    self:RegisterEvent("PLAYER_REGEN_ENABLED")
-  end
-end
-
 function handlerFrame:PLAYER_REGEN_DISABLED()
-  _G.assert(not _G.InCombatLockdown())
-  update()
-end
-
-function handlerFrame:ARENA_PREP_OPPONENT_SPECIALIZATIONS()
   _G.assert(not _G.InCombatLockdown())
   update()
 end
@@ -1875,8 +1811,6 @@ handlerFrame:RegisterEvent("ADDON_LOADED")
 handlerFrame:RegisterEvent("PLAYER_LOGIN")
 handlerFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 --handlerFrame:RegisterEvent("SPELLS_CHANGED")
-handlerFrame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
 --handlerFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
-handlerFrame:RegisterEvent("ARENA_PREP_OPPONENT_SPECIALIZATIONS")
 
 -- vim: tw=120 sts=2 sw=2 et
